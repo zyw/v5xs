@@ -33,15 +33,17 @@ final class MetricMathTests: XCTestCase {
 
     func testAnimalPaceClearlyRespondsToCPULoad() {
         let loads: [Double] = [0, 20, 50, 80, 100]
-        let intervals = loads.map { AnimalPace.forLoad($0).frameInterval }
-        XCTAssertEqual(intervals[0], 0.30, accuracy: 0.001)
-        XCTAssertEqual(intervals[4], 0.055, accuracy: 0.001)
-        for index in 1..<intervals.count {
-            XCTAssertLessThan(intervals[index], intervals[index - 1])
+        let framesPerSecond = loads.map { 1 / AnimalPace.forLoad($0).frameInterval }
+        XCTAssertEqual(framesPerSecond[0], 5, accuracy: 0.01)
+        XCTAssertEqual(framesPerSecond[1], 10, accuracy: 0.01)
+        XCTAssertEqual(framesPerSecond[2], 17.5, accuracy: 0.01)
+        XCTAssertEqual(framesPerSecond[3], 25, accuracy: 0.01)
+        XCTAssertEqual(framesPerSecond[4], 30, accuracy: 0.01)
+        for index in 1..<framesPerSecond.count {
+            XCTAssertGreaterThan(framesPerSecond[index], framesPerSecond[index - 1])
         }
-        XCTAssertGreaterThan(intervals[0] / intervals[4], 5)
-        XCTAssertEqual(AnimalPace.forLoad(-20).frameInterval, intervals[0], accuracy: 0.001)
-        XCTAssertEqual(AnimalPace.forLoad(130).frameInterval, intervals[4], accuracy: 0.001)
+        XCTAssertEqual(1 / AnimalPace.forLoad(-20).frameInterval, 5, accuracy: 0.01)
+        XCTAssertEqual(1 / AnimalPace.forLoad(130).frameInterval, 30, accuracy: 0.01)
     }
 
     func testGPUCoreCountFromSystemProfilerJSON() {

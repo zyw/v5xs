@@ -57,7 +57,7 @@ public struct AnimalPace: Sendable {
 
     public static func forLoad(_ percent: Double) -> AnimalPace {
         let load = percent.isFinite ? min(max(percent, 0), 100) : 0
-        return AnimalPace(frameInterval: 0.30 - 0.245 * load / 100)
+        return AnimalPace(frameInterval: 1 / (5 + 25 * load / 100))
     }
 }
 
