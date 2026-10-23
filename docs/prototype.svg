@@ -1,0 +1,209 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1700" height="1550" viewBox="0 0 1700 1550">
+  <defs>
+    <linearGradient id="wall" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#203b42"/>
+      <stop offset=".55" stop-color="#395750"/>
+      <stop offset="1" stop-color="#987258"/>
+    </linearGradient>
+    <linearGradient id="hero" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#314c40"/>
+      <stop offset="1" stop-color="#26382f"/>
+    </linearGradient>
+    <linearGradient id="downFill" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#78ceb2" stop-opacity=".32"/>
+      <stop offset="1" stop-color="#78ceb2" stop-opacity="0"/>
+    </linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="18" stdDeviation="22" flood-color="#071416" flood-opacity=".36"/>
+    </filter>
+    <style>
+      text { font-family:"PingFang SC","Hiragino Sans GB","Noto Sans CJK SC",sans-serif }
+      .white { fill:#f2f4ef }
+      .soft { fill:#cad2ca }
+      .muted { fill:#9faea6 }
+      .mint { fill:#91dcbb }
+      .blue { fill:#83bde8 }
+      .amber { fill:#f4c886 }
+      .tiny { font-size:16px; font-weight:500 }
+      .small { font-size:19px; font-weight:500 }
+      .body { font-size:22px; font-weight:600 }
+      .head { font-size:30px; font-weight:700 }
+      .num { font-size:42px; font-weight:700; font-variant-numeric:tabular-nums }
+    </style>
+  </defs>
+
+  <rect width="1700" height="1550" fill="url(#wall)"/>
+  <circle cx="1530" cy="1360" r="560" fill="#d69871" opacity=".09"/>
+  <circle cx="240" cy="1180" r="400" fill="#80c7ad" opacity=".07"/>
+  <rect width="1700" height="52" fill="#142930" opacity=".83"/>
+  <text x="31" y="35" class="white small">●  桌面</text>
+  <text x="1340" y="34" fill="#d5e1db" font-size="17">Wi-Fi</text>
+  <text x="1570" y="34" fill="#d5e1db" font-size="17">10:24</text>
+  <!-- Only the animal is shown in the menu bar: no CPU number or other status text. -->
+  <rect x="1411" y="3" width="81" height="45" rx="15" fill="#9fd9b8" opacity=".16"/>
+  <g transform="translate(1421 9)" stroke="#e5f5ea" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M8 22 C19 9 32 10 41 15 L52 8 L57 13 L49 20 C43 29 29 28 21 24 L10 32 M26 24 L21 35 M39 25 L49 33"/>
+    <path d="M9 14 L3 10 M9 20 L1 20"/>
+  </g>
+  <text x="71" y="97" fill="#e9f0e9" font-size="18" font-weight="700" letter-spacing="2">监控概览 · 只有动物留在菜单栏</text>
+  <text x="854" y="97" fill="#e9f0e9" font-size="18" font-weight="700" letter-spacing="2">交互与能力状态</text>
+
+  <!-- Main popover -->
+  <rect x="68" y="119" width="723" height="1389" rx="27" fill="#202a27" stroke="#8ca398" stroke-opacity=".45" filter="url(#shadow)"/>
+  <rect x="85" y="136" width="689" height="144" rx="21" fill="url(#hero)"/>
+  <circle cx="128" cy="190" r="13" fill="#92dcb9"/>
+  <path d="M128 162v-9m0 74v-9m-28-28h-9m74 0h-9m-47-19-6-6m50 50-6-6m0-38 6-6m-50 50 6-6" stroke="#92dcb9" stroke-width="4" stroke-linecap="round"/>
+  <text x="166" y="191" class="white head">状态良好</text>
+  <text x="166" y="224" class="soft tiny">M2 · 16 GB · 已运行 3 天 9 小时</text>
+  <rect x="600" y="165" width="145" height="32" rx="10" fill="#4e6b59"/>
+  <text x="672" y="187" class="mint tiny" text-anchor="middle">热状态正常</text>
+  <text x="107" y="259" class="muted tiny">点击指标可查看趋势与采样来源</text>
+
+  <!-- CPU / GPU -->
+  <rect x="85" y="298" width="334" height="190" rx="18" fill="#2b3732" stroke="#6f8277" stroke-opacity=".4"/>
+  <text x="108" y="337" class="soft small">CPU</text>
+  <text x="108" y="400" class="white num">17<tspan font-size="21">%</tspan></text>
+  <path d="M108 451 L132 450 L155 443 L178 450 L202 434 L225 443 L249 438 L272 447 L295 437 L319 442 L342 437 L369 441" fill="none" stroke="#8ed7b3" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="388" y="337" class="mint tiny" text-anchor="end">8 核 · 4P + 4E</text>
+  <text x="108" y="477" class="muted tiny">近 60 秒</text>
+  <rect x="435" y="298" width="339" height="190" rx="18" fill="#2b3732" stroke="#6f8277" stroke-opacity=".4"/>
+  <text x="458" y="337" class="soft small">GPU 活跃度</text>
+  <text x="458" y="400" class="white num">75<tspan font-size="21">%</tspan></text>
+  <text x="458" y="455" class="mint tiny">8 核 GPU · M2 基础配置</text>
+  <text x="458" y="477" class="muted tiny">诊断采样 · 仅支持的机型显示</text>
+  <rect x="687" y="318" width="62" height="29" rx="8" fill="#504b38"/>
+  <text x="718" y="338" class="amber tiny" text-anchor="middle">扩展</text>
+  <path d="M647 428 L666 427 L684 408 L702 410 L720 414 L738 406 L749 410" fill="none" stroke="#f3c788" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Memory / disk -->
+  <rect x="85" y="504" width="334" height="126" rx="18" fill="#2b3732" stroke="#6f8277" stroke-opacity=".4"/>
+  <text x="108" y="539" class="soft small">内存</text>
+  <text x="108" y="586" class="white head">12.9 <tspan font-size="18">/ 16 GB</tspan></text>
+  <rect x="108" y="606" width="282" height="8" rx="4" fill="#4b5b51"/>
+  <rect x="108" y="606" width="226" height="8" rx="4" fill="#8ed7b3"/>
+  <text x="386" y="539" class="mint tiny" text-anchor="end">压力正常</text>
+  <rect x="435" y="504" width="339" height="126" rx="18" fill="#2b3732" stroke="#6f8277" stroke-opacity=".4"/>
+  <text x="458" y="539" class="soft small">磁盘可用</text>
+  <text x="458" y="591" class="white head">245 GB</text>
+  <text x="745" y="588" class="muted tiny" text-anchor="end">总计 512 GB</text>
+
+  <!-- Full-width network chart -->
+  <rect x="85" y="646" width="689" height="265" rx="18" fill="#2b3732" stroke="#6f8277" stroke-opacity=".4"/>
+  <text x="108" y="683" class="white body">网络</text>
+  <text x="174" y="683" class="muted tiny">Wi-Fi · 过去 60 秒</text>
+  <text x="108" y="720" class="mint small">↓ 下载 112 KB/s</text>
+  <text x="332" y="720" class="blue small">↑ 上传 10 KB/s</text>
+  <text x="746" y="720" class="muted tiny" text-anchor="end">自动刻度 · KB/s</text>
+  <path d="M112 756 H747 M112 812 H747 M112 868 H747" stroke="#66766e" stroke-opacity=".36" stroke-width="1"/>
+  <text x="108" y="751" class="muted tiny">160</text>
+  <text x="108" y="807" class="muted tiny">80</text>
+  <text x="108" y="867" class="muted tiny">0</text>
+  <path d="M147 846 L174 836 L201 840 L228 825 L255 831 L282 790 L309 798 L336 810 L363 794 L390 799 L417 753 L444 778 L471 780 L498 790 L525 768 L552 783 L579 790 L606 779 L633 744 L660 761 L687 770 L714 748 L744 760 L744 870 L147 870 Z" fill="url(#downFill)"/>
+  <path d="M147 846 L174 836 L201 840 L228 825 L255 831 L282 790 L309 798 L336 810 L363 794 L390 799 L417 753 L444 778 L471 780 L498 790 L525 768 L552 783 L579 790 L606 779 L633 744 L660 761 L687 770 L714 748 L744 760" fill="none" stroke="#8ed7b3" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>
+  <path d="M147 863 L174 862 L201 859 L228 863 L255 857 L282 861 L309 855 L336 857 L363 861 L390 859 L417 851 L444 857 L471 861 L498 859 L525 854 L552 860 L579 856 L606 859 L633 850 L660 855 L687 857 L714 853 L744 856" fill="none" stroke="#80bee6" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="147" y="894" class="muted tiny">60 秒前</text>
+  <text x="745" y="894" class="muted tiny" text-anchor="end">现在</text>
+
+  <!-- Thermal state with conditional sensors -->
+  <rect x="85" y="927" width="689" height="121" rx="18" fill="#2b3732" stroke="#6f8277" stroke-opacity=".4"/>
+  <text x="108" y="965" class="white body">温度与散热</text>
+  <rect x="107" y="982" width="139" height="42" rx="11" fill="#405849"/>
+  <text x="177" y="1009" class="mint small" text-anchor="middle">热状态 正常</text>
+  <text x="276" y="1009" class="soft small">CPU 56°C</text>
+  <text x="430" y="1009" class="soft small">GPU 55°C</text>
+  <text x="734" y="1009" class="muted tiny" text-anchor="end">传感器可用时</text>
+
+  <!-- Mac battery stays textual; connected peripherals use icon-centered circular charge rings. -->
+  <rect x="85" y="1064" width="689" height="216" rx="18" fill="#2b3732" stroke="#6f8277" stroke-opacity=".4"/>
+  <text x="108" y="1103" class="white body">电量</text>
+  <text x="742" y="1103" class="muted tiny" text-anchor="end">本机与已连接外设</text>
+  <path d="M108 1117 H751 M406 1132 V1255" stroke="#697c70" stroke-opacity=".4"/>
+  <text x="109" y="1162" class="soft small">MacBook</text>
+  <text x="108" y="1210" class="white num">100<tspan font-size="21">%</tspan></text>
+  <text x="108" y="1250" class="muted tiny">已充满 · 电源已连接</text>
+  <!-- Mouse: circumference at r=43 is 270; 84% is 227. -->
+  <circle cx="520" cy="1183" r="43" fill="none" stroke="#46554b" stroke-width="8"/>
+  <circle cx="520" cy="1183" r="43" fill="none" stroke="#91dcbb" stroke-width="8" stroke-linecap="round" stroke-dasharray="227 270" transform="rotate(-90 520 1183)"/>
+  <g transform="translate(520 1183)" fill="none" stroke="#d6e7da" stroke-width="2.4" stroke-linejoin="round">
+    <rect x="-12" y="-18" width="24" height="36" rx="10"/>
+    <path d="M0 -17 V-3 M-12 -2 H12"/>
+  </g>
+  <text x="520" y="1252" class="soft tiny" text-anchor="middle">鼠标 84%</text>
+  <!-- Keyboard: 62% of the same ring. -->
+  <circle cx="683" cy="1183" r="43" fill="none" stroke="#46554b" stroke-width="8"/>
+  <circle cx="683" cy="1183" r="43" fill="none" stroke="#91dcbb" stroke-width="8" stroke-linecap="round" stroke-dasharray="167 270" transform="rotate(-90 683 1183)"/>
+  <g transform="translate(683 1183)" fill="none" stroke="#d6e7da" stroke-width="2.3" stroke-linejoin="round">
+    <rect x="-20" y="-13" width="40" height="26" rx="3"/>
+    <path d="M-14 -7 H-11 M-7 -7 H-4 M0 -7 H3 M7 -7 H10 M13 -7 H15 M-14 -2 H-11 M-7 -2 H-4 M0 -2 H3 M7 -2 H10 M13 -2 H15 M-13 4 H-8 M-4 4 H5 M9 4 H14"/>
+  </g>
+  <text x="683" y="1252" class="soft tiny" text-anchor="middle">键盘 62%</text>
+
+  <!-- Process list preserved from prior design -->
+  <text x="93" y="1322" class="white body">高资源占用进程</text>
+  <text x="750" y="1322" class="mint tiny" text-anchor="end">查看全部 ›</text>
+  <text x="525" y="1350" class="muted tiny" text-anchor="end">内存</text>
+  <text x="677" y="1350" class="muted tiny" text-anchor="end">CPU</text>
+  <rect x="85" y="1361" width="689" height="50" rx="11" fill="#36483e"/>
+  <text x="109" y="1393" class="white small">IntelliJ IDEA</text>
+  <text x="525" y="1393" class="soft tiny" text-anchor="end">4.59 GB</text>
+  <text x="677" y="1393" class="amber tiny" text-anchor="end">39.4%</text>
+  <text x="747" y="1393" class="white body" text-anchor="end">···</text>
+  <text x="109" y="1449" class="soft small">Code</text>
+  <text x="525" y="1449" class="muted tiny" text-anchor="end">3.33 GB</text>
+  <text x="677" y="1449" class="muted tiny" text-anchor="end">1.1%</text>
+  <text x="747" y="1449" class="soft body" text-anchor="end">···</text>
+  <text x="109" y="1489" class="muted tiny">设置</text>
+  <text x="747" y="1489" class="muted tiny" text-anchor="end">退出</text>
+
+  <!-- Right: avatar selection -->
+  <rect x="834" y="119" width="790" height="296" rx="24" fill="#26342f" stroke="#92a498" stroke-opacity=".53" filter="url(#shadow)"/>
+  <text x="865" y="166" class="white head">菜单栏形象</text>
+  <text x="865" y="199" class="muted small">右键动物 → 更换形象 · 菜单栏不显示百分比</text>
+  <rect x="858" y="222" width="224" height="138" rx="17" fill="#446650" stroke="#a3ddb8"/>
+  <text x="970" y="283" class="white head" text-anchor="middle">奔跑的猫</text>
+  <text x="970" y="333" class="mint tiny" text-anchor="middle">✓ 已选择</text>
+  <rect x="1097" y="222" width="224" height="138" rx="17" fill="#35443c"/>
+  <text x="1209" y="283" class="white head" text-anchor="middle">奔跑的兔</text>
+  <text x="1209" y="333" class="muted tiny" text-anchor="middle">点击预览</text>
+  <rect x="1336" y="222" width="262" height="138" rx="17" fill="#35443c"/>
+  <text x="1467" y="283" class="white head" text-anchor="middle">奔跑的狐</text>
+  <text x="1467" y="333" class="muted tiny" text-anchor="middle">点击预览</text>
+  <text x="866" y="393" class="soft tiny">CPU 平滑负载 → 静止 / 慢跑 / 奔跑 / 冲刺 · 支持暂停动画</text>
+
+  <!-- Right: capability fallback states -->
+  <rect x="834" y="437" width="790" height="381" rx="24" fill="#26342f" stroke="#92a498" stroke-opacity=".53" filter="url(#shadow)"/>
+  <text x="865" y="483" class="white head">数据缺失时怎么显示</text>
+  <text x="865" y="516" class="muted small">同一个位置呈现状态，不填造数值</text>
+  <rect x="857" y="545" width="741" height="72" rx="14" fill="#33423a"/>
+  <text x="884" y="588" class="soft body">GPU 活跃度</text>
+  <text x="1556" y="588" class="amber body" text-anchor="end">—  此机型不可用</text>
+  <rect x="857" y="630" width="741" height="72" rx="14" fill="#33423a"/>
+  <text x="884" y="673" class="soft body">CPU / GPU 温度</text>
+  <text x="1556" y="673" class="amber body" text-anchor="end">—  无传感器读数</text>
+  <rect x="857" y="715" width="741" height="72" rx="14" fill="#33423a"/>
+  <text x="884" y="758" class="soft body">蓝牙键盘电量</text>
+  <text x="1556" y="758" class="amber body" text-anchor="end">—  设备未报告</text>
+
+  <!-- Right: graph interaction -->
+  <rect x="834" y="841" width="790" height="322" rx="24" fill="#26342f" stroke="#92a498" stroke-opacity=".53" filter="url(#shadow)"/>
+  <text x="865" y="888" class="white head">网络曲线交互</text>
+  <text x="865" y="926" class="soft small">↓ 下载与 ↑ 上传同图叠加；悬停显示该秒的两条速率。</text>
+  <rect x="864" y="950" width="732" height="151" rx="15" fill="#314139"/>
+  <path d="M891 1068 H1573 M891 1035 H1573 M891 1001 H1573" stroke="#729080" stroke-opacity=".35"/>
+  <path d="M894 1053 L940 1050 L986 1028 L1032 1034 L1078 996 L1124 1018 L1170 1030 L1216 1009 L1262 1023 L1308 991 L1354 1009 L1400 1018 L1446 986 L1492 1000 L1566 992" fill="none" stroke="#94dcba" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M894 1063 L940 1061 L986 1062 L1032 1059 L1078 1058 L1124 1059 L1170 1056 L1216 1057 L1262 1052 L1308 1057 L1354 1055 L1400 1053 L1446 1054 L1492 1052 L1566 1054" fill="none" stroke="#8fc4e8" stroke-width="3" stroke-linecap="round"/>
+  <path d="M1308 972 V1070" stroke="#e6ebde" stroke-width="1.5" stroke-dasharray="5 5"/>
+  <rect x="1177" y="961" width="214" height="66" rx="11" fill="#4d5b51" stroke="#b0c6b5"/>
+  <text x="1190" y="986" class="mint tiny">下载 128 KB/s</text>
+  <text x="1190" y="1011" class="blue tiny">上传 8 KB/s</text>
+  <text x="865" y="1138" class="muted tiny">切换 1 分钟 / 5 分钟 · 无采样时断线，不把空值画成零</text>
+
+  <!-- Right: device grouping and source info -->
+  <rect x="834" y="1187" width="790" height="254" rx="24" fill="#26342f" stroke="#92a498" stroke-opacity=".53" filter="url(#shadow)"/>
+  <text x="865" y="1234" class="white head">采集策略</text>
+  <text x="865" y="1276" class="soft small">CPU / 网络：1 秒采样，保留短期内存环形缓冲。</text>
+  <text x="865" y="1315" class="soft small">蓝牙电量：连接或电量变化时刷新，支持手动重新检查。</text>
+  <text x="865" y="1354" class="soft small">GPU / 温度：显示采集来源；不支持时仍保留热状态。</text>
+  <text x="865" y="1408" class="muted tiny">示意数值用于原型展示 · 进程“…”菜单沿用上一版交互</text>
+  <text x="834" y="1490" fill="#dbe4da" font-size="17">第二版概念原型  ·  真实指标以设备能力、权限和采样结果为准</text>
+</svg>
