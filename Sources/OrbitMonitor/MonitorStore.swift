@@ -53,6 +53,10 @@ final class MonitorStore: ObservableObject {
     @Published var animationPaused: Bool {
         didSet { UserDefaults.standard.set(animationPaused, forKey: "animationPaused") }
     }
+    /// 已安装应用列表缓存时长（天）。改后立即写入，卸载窗口下次读取新值。
+    @Published var appCacheDays: Double {
+        didSet { AppListCacheSetting.set(appCacheDays) }
+    }
 
     let machine = MachineDetails()
     private let sampler = SystemSampler()
@@ -100,6 +104,7 @@ final class MonitorStore: ObservableObject {
         animal = Animal(rawValue: UserDefaults.standard.string(forKey: "animal") ?? "") ?? .cat
         animationPaused = UserDefaults.standard.bool(forKey: "animationPaused")
         lowLatencyMode = UserDefaults.standard.bool(forKey: "lowLatencyMode")
+        appCacheDays = AppListCacheSetting.days
     }
 
     func start() {

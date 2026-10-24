@@ -456,6 +456,8 @@ private extension View {
 struct SettingsPanel: View {
     @ObservedObject var store: MonitorStore
 
+    private var cacheDays: Int { Int(store.appCacheDays.rounded()) }
+
     var body: some View {
         Form {
             Picker("菜单栏动物", selection: $store.animal) {
@@ -467,11 +469,21 @@ struct SettingsPanel: View {
             Text("减少动态效果开启时，图标会保持静态。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            Section {
+                Stepper("应用列表缓存：\(cacheDays) 天", value: $store.appCacheDays, in: 1...365, step: 1)
+                Text("首次打开卸载窗口扫描并缓存已安装应用；缓存期内再次打开直接读取，手动刷新会用最新数据重建缓存。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
             Text("GPU 活跃度按设备支持情况显示；CPU／GPU 温度仅在已验证的 Mac14,2 上读取。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
-        .padding(20)
-        .frame(width: 370, height: 250)
+        .formStyle(.grouped)
+        .padding(12)
+        .frame(minWidth: 380, idealWidth: 420, maxWidth: 460,
+               minHeight: 320, idealHeight: 340, maxHeight: .infinity, alignment: .top)
     }
 }

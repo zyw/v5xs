@@ -46,6 +46,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 defer: false
             )
             window.title = "v5xs 预览"
+            window.isReleasedWhenClosed = false
+            window.delegate = self
             window.contentView = NSHostingView(
                 rootView: MonitorPanel(store: store, onOpenSettings: { [weak self] in
                     self?.openSettings()
@@ -63,6 +65,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationWillTerminate(_ notification: Notification) {
         store.stop()
         animationTimer?.invalidate()
+    }
+
+    // Closing the uninstaller (or settings) window must not terminate the menu bar app.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        false
     }
 
     private func updateIcon() {
@@ -149,20 +156,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettings() {
+        openSettingsWindow()?.center()
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    @discardableResult
+    private func openSettingsWindow() -> NSWindow? {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 370, height: 250),
-                styleMask: [.titled, .closable],
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 380),
+                styleMask: [.titled, .closable, .resizable],
                 backing: .buffered,
                 defer: false
             )
+            window.minSize = NSSize(width: 360, height: 320)
             window.title = "v5xs 设置"
+            window.isReleasedWhenClosed = false
+            window.delegate = self
             window.contentView = NSHostingView(rootView: SettingsPanel(store: store))
             settingsWindow = window
         }
-        settingsWindow?.center()
-        settingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
+        return settingsWindow
     }
 
     private func openUninstaller() {
@@ -174,6 +189,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 defer: false
             )
             window.title = "v5xs · 软件卸载"
+            window.isReleasedWhenClosed = false
+            window.delegate = self
             window.minSize = NSSize(width: 720, height: 480)
             window.contentView = NSHostingView(rootView: UninstallerPanel())
             uninstallerWindow = window
@@ -190,6 +207,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.messageText = "操作失败"
         alert.informativeText = message
         alert.runModal()
+    }
+}
+
+extension AppDelegate: NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        if window === uninstallerWindow { uninstallerWindow = nil }
+        else if window === settingsWindow { settingsWindow = nil }
+        else if window === previewWindow { previewWindow = nil }
     }
 }
 

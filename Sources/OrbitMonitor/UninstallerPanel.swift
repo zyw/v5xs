@@ -10,14 +10,14 @@ private enum UninstallStyle {
     static let muted = Color(red: 0.64, green: 0.71, blue: 0.67)
 }
 
-private struct UninstallFile: Identifiable, Sendable {
+private struct UninstallFile: Identifiable, Sendable, Codable {
     let url: URL
     let label: String
     let bytes: Int64
     var id: URL { url }
 }
 
-private struct InstalledApp: Identifiable, Sendable {
+private struct InstalledApp: Identifiable, Sendable, Codable {
     let url: URL
     let name: String
     let bundleID: String?
@@ -29,21 +29,78 @@ private struct InstalledApp: Identifiable, Sendable {
     var id: URL { url }
 }
 
+private struct AppListCache: Codable {
+    var savedAt: Date
+    var apps: [InstalledApp]
+}
+
+/// Duration (days) to keep the installed-app cache before re-scanning.
+/// Writes immediately; the uninstaller and settings panel both read this value.
+enum AppListCacheSetting {
+    static let key = "appListCacheDays"
+    static let defaultValue: Double = 30
+
+    static var days: Double {
+        let stored = UserDefaults.standard.double(forKey: key)
+        return stored > 0 ? stored : defaultValue
+    }
+
+    static var seconds: TimeInterval { days * 86_400 }
+
+    static func set(_ value: Double) {
+        UserDefaults.standard.set(max(1, min(value, 365)), forKey: key)
+    }
+}
+
+/// Persists the installed-app inventory so re-opening the uninstaller does not
+/// re-scan the whole disk every time. The cache duration is read from settings.
+fileprivate enum AppInventoryCache {
+    fileprivate static let fileName = "installed-apps.json"
+
+    fileprivate static func load(maxAgeSeconds: TimeInterval) -> [InstalledApp]? {
+        guard maxAgeSeconds > 0, let url = fileURL,
+              let data = try? Data(contentsOf: url),
+              let entry = try? JSONDecoder().decode(AppListCache.self, from: data) else { return nil }
+        guard Date().timeIntervalSince(entry.savedAt) <= maxAgeSeconds else { return nil }
+        return entry.apps
+    }
+
+    fileprivate static func save(_ apps: [InstalledApp]) {
+        guard let url = fileURL else { return }
+        let entry = AppListCache(savedAt: Date(), apps: apps)
+        if let data = try? JSONEncoder().encode(entry) {
+            try? data.write(to: url, options: [.atomic])
+        }
+    }
+
+    fileprivate static func clear() {
+        guard let url = fileURL else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    /// Per-user Application Support path so the cache survives app updates.
+    private static var fileURL: URL? {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        return support?.appendingPathComponent(fileName)
+    }
+}
+
 private enum AppInventory {
     static let roots = [
         URL(fileURLWithPath: "/Applications", isDirectory: true),
-        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true)
+        FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Applications", isDirectory: true),
+        URL(fileURLWithPath: "/Library/Input Methods", isDirectory: true),
+        FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Input Methods", isDirectory: true)
     ]
 
     static func scan() -> [InstalledApp] {
         let fm = FileManager.default
         var found: [InstalledApp] = []
+        var seenPaths = Set<String>()
         for root in roots {
-            guard let entries = try? fm.contentsOfDirectory(
-                at: root, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
-                options: [.skipsHiddenFiles]
-            ) else { continue }
-            for url in entries where url.pathExtension.lowercased() == "app" {
+            for url in appBundles(in: root) {
+                guard seenPaths.insert(url.standardizedFileURL.path).inserted else { continue }
                 guard let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey, .creationDateKey]),
                       values.isDirectory == true, values.isSymbolicLink != true,
                       let bundle = Bundle(url: url) else { continue }
@@ -74,6 +131,34 @@ private enum AppInventory {
                 files: Array(app.files.prefix(1))
             )
         }
+    }
+
+    /// Lists app bundles up to three levels below a search root, mirroring how
+    /// Finder surfaces apps inside folders such as "Chrome Apps.localized".
+    /// Hidden folders (updater staging) are skipped, hidden app bundles are kept,
+    /// and bundles nested inside another bundle are not descended into.
+    private static func appBundles(in root: URL) -> [URL] {
+        let fm = FileManager.default
+        var results: [URL] = []
+        func walk(_ directory: URL, depth: Int) {
+            guard depth < 3,
+                  let entries = try? fm.contentsOfDirectory(
+                      at: directory, includingPropertiesForKeys: [.isDirectoryKey, .isSymbolicLinkKey],
+                      options: []
+                  ) else { return }
+            for entry in entries.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                if entry.pathExtension.lowercased() == "app" {
+                    results.append(entry)
+                    continue
+                }
+                guard !entry.lastPathComponent.hasPrefix("."),
+                      let values = try? entry.resourceValues(forKeys: [.isDirectoryKey, .isSymbolicLinkKey]),
+                      values.isDirectory == true, values.isSymbolicLink != true else { continue }
+                walk(entry, depth: depth + 1)
+            }
+        }
+        walk(root, depth: 0)
+        return results
     }
 
     private static func relatedFiles(for identifier: String?, name: String, appURL: URL) -> [UninstallFile] {
@@ -188,12 +273,24 @@ private enum AppInventory {
               (try? standardized.resourceValues(forKeys: [.isSymbolicLinkKey]))?.isSymbolicLink != true else {
             return false
         }
-        let appParent = app.url.deletingLastPathComponent().standardizedFileURL
-        guard roots.contains(where: { $0.standardizedFileURL == appParent }),
+        guard isInsideSearchRoot(app.url),
               Bundle(url: app.url)?.bundleIdentifier == app.bundleID else { return false }
         if standardized == app.url.standardizedFileURL { return true }
         guard let identifier = app.bundleID, isBundleIdentifier(identifier) else { return false }
         return removableRemnant(standardized, identifier: identifier, appName: app.name)
+    }
+
+    /// A bundle must sit one to three levels below a search root, mirroring the
+    /// discovery rule (for example "Applications/Chrome Apps.localized/X.app").
+    private static func isInsideSearchRoot(_ bundle: URL) -> Bool {
+        let path = bundle.standardizedFileURL.path
+        for root in roots {
+            let rootPath = root.standardizedFileURL.path
+            guard path.hasPrefix(rootPath + "/") else { continue }
+            let depth = path.dropFirst(rootPath.count + 1).split(separator: "/").count
+            if (1...3).contains(depth) { return true }
+        }
+        return false
     }
 
     private static func removableRemnant(_ url: URL, identifier: String, appName: String) -> Bool {
@@ -240,17 +337,38 @@ private final class UninstallerModel: ObservableObject {
     @Published var loading = false
     @Published var error: String?
 
+    /// Load apps for display. Prefers a fresh cache; only falls back to a full
+    /// scan when the cache is missing or stale.
+    func load() {
+        guard !loading else { return }
+        if let cached = AppInventoryCache.load(maxAgeSeconds: AppListCacheSetting.seconds) {
+            replace(with: cached)
+            return
+        }
+        scanAndCache()
+    }
+
+    /// Manual refresh: always re-scan and replace the cache with fresh data.
     func refresh() {
         guard !loading else { return }
+        scanAndCache()
+    }
+
+    private func scanAndCache() {
         loading = true
         Task {
             let result = await Task.detached(priority: .userInitiated) { AppInventory.scan() }.value
-            apps = result
-            selected.removeAll()
-            chosenFiles.removeAll()
-            expanded.removeAll()
-            loading = false
+            AppInventoryCache.save(result)
+            replace(with: result)
         }
+    }
+
+    private func replace(with apps: [InstalledApp]) {
+        self.apps = apps
+        selected.removeAll()
+        chosenFiles.removeAll()
+        expanded.removeAll()
+        loading = false
     }
 
     func toggle(_ app: InstalledApp) {
@@ -416,7 +534,7 @@ struct UninstallerPanel: View {
         .background(UninstallStyle.background)
         .foregroundStyle(.white)
         .preferredColorScheme(.dark)
-        .onAppear { if model.apps.isEmpty { model.refresh() } }
+        .onAppear { if model.apps.isEmpty { model.load() } }
         .alert("部分文件未能移动", isPresented: Binding(
             get: { model.error != nil },
             set: { if !$0 { model.error = nil } }

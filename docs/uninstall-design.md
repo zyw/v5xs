@@ -21,15 +21,15 @@
 
 ## 实现约定
 
-实际窗口只扫描 `/Applications` 和 `~/Applications` 顶层的非 Apple 应用，并排除 v5xs 自身。体积按文件扫描估算；最近使用来自 Spotlight，缺失时显示“未知”；安装时间取应用目录创建时间，并非购买或首次安装记录。
+实际窗口扫描 `/Applications`、`~/Applications`、`/Library/Input Methods` 和 `~/Library/Input Methods`，每个位置向下最多三层，因此能发现 `~/Applications/Chrome Apps.localized/` 这类子目录中的 Web App 与输入法；排除 Apple 系统应用、指向系统路径的符号链接和 v5xs 自身，不扫描外接卷、PlayCover 与 Homebrew Caskroom。体积按文件扫描估算；最近使用来自 Spotlight，缺失时显示“未知”；安装时间取应用目录创建时间，并非购买或首次安装记录。
 
-关联文件按 Bundle ID 扫描当前用户 `~/Library`：Application Support、Caches、Containers（含 `<bundleID>.*` helper 容器）、WebKit、HTTPStorages、Cookies（`<bundleID>.binarycookies`）、Application Scripts（含 helper 脚本）、Saved Application State、Preferences（含 ByHost）、Logs、LaunchAgents（登录项），以及最近使用记录 `sfl2/sfl3/sfl4` 与 `/var/folders/.../C/<bundleID>` 临时缓存；没有 Bundle ID 目录时再按应用名匹配 Application Support 和 Caches，并在行内标注“按名称”。删前校验 `canTrash` 会逐条确认：路径确实来自该应用的扫描结果、父目录属于上述白名单、文件名匹配 Bundle ID／应用名、且不是符号链接；共享的 Group Containers、系统级 `/Library` 和归属不明路径一律不列入。
+关联文件按 Bundle ID 扫描当前用户 `~/Library`：Application Support、Caches、Containers（含 `<bundleID>.*` helper 容器）、WebKit、HTTPStorages、Cookies（`<bundleID>.binarycookies`）、Application Scripts（含 helper 脚本）、Saved Application State、Preferences（含 ByHost）、Logs、LaunchAgents（登录项），以及最近使用记录 `sfl2/sfl3/sfl4` 与 `/var/folders/.../C/<bundleID>` 临时缓存；没有 Bundle ID 目录时再按应用名匹配 Application Support 和 Caches，并在行内标注“按名称”。删前校验 `canTrash` 会逐条确认：应用本体位于搜索根下一至三层、路径确实来自该应用的扫描结果、父目录属于上述白名单、文件名匹配 Bundle ID／应用名、且不是符号链接；共享的 Group Containers、系统级 `/Library` 和归属不明路径一律不列入。
 
 卸载前会列出全部路径再次确认，执行时调用系统废纸篓；正在运行的应用会跳过，权限不足的文件逐项报告。此功能不依赖 Mole，也不执行 Mole 命令。
 
 ## 已知取舍
 
-- 扫描为全量遍历（本机 31 个 App 约 6 秒），暂无进度条与缓存。
+- 已安装应用列表带缓存：首次打开卸载窗口扫描并缓存到 `~/Library/Application Support/installed-apps.json`；缓存有效期内再次打开直接读取、不重新扫描。缓存时长默认 30 天，可在“设置 → 应用列表缓存”调整（1–365 天）。点刷新总是重新扫描，并用最新数据重建缓存。全量扫描当前约 10–13 秒，成功前界面显示加载态。
 - 运行中的应用只在执行阶段拦截，列表暂不显示“运行中”标记。
 - 关联文件只处理当前用户可确认归属的路径：共享的 Group Containers、系统级路径与归属不明的目录不列出；按名称匹配的目录会标注“按名称”。
-- 扫描范围比早期版本更全（对齐 Mole 的残留清单），但仍不读取系统级守护进程与安装包收据。
+- 扫描范围比早期版本更全（对齐 Mole 的残留清单与应用发现位置），但仍不读取系统级守护进程、安装包收据、外接卷与 Homebrew Caskroom。
