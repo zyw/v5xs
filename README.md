@@ -1,14 +1,41 @@
 # v5xs
 
-基于 SwiftUI 与 AppKit 的 macOS 菜单栏系统监控软件。菜单栏只显示动物动画，CPU 越忙播放越快；低负载仍保持连贯的动作。左键打开面板，右键更换猫、兔、狐、狗、马、恐龙、青蛙、鸡、鸭、鱼等形象，或暂停动画、设置登录启动和退出。动物剪影资源位于 `Resources/Animals/`，狐狸使用矢量动画。
+在 macOS 菜单栏养一只「跑得越快越忙」的小动物，随时查看 CPU、GPU、内存、磁盘、网络与温度的实时状态；顺带清理不再需要的应用和开机自启项。
 
-应用图标来自 `Resources/AppIcon.png`，打包时使用 `Resources/AppIcon.icns`；菜单栏动物动画独立于应用图标。
+v5xs 是一款用 SwiftUI + AppKit 编写的 macOS 菜单栏系统监控工具。菜单栏只保留一只动物剪影：系统越忙它跑得越快，低负载时依然连贯。左键打开悬浮监控面板，右键即可更换形象或进入设置。
 
-设计参考：`docs/prototype.svg`。当前界面使用实时系统数据，因此不显示原型中的示例数值。
+<p align="center">
+  <img src="docs/screenshot-monitor.png" width="360" alt="v5xs 监控面板截图" />
+</p>
 
-## 构建与运行
+## ✨ 特性
 
-需要 macOS 14+、Swift 6 与 macOS SDK。推荐使用匹配版本的完整 Xcode：
+- **动态菜单栏动物**：CPU 越忙跑得越快；支持猫、兔、狐、狗、马、恐龙、青蛙、鸡、鸭、鱼等形象。
+- **实时系统监控**：CPU 占用与核心拓扑、GPU 活跃度、内存、磁盘读写、网络上传/下载曲线、温度与热状态。
+- **外设电量**：鼠标 / 键盘蓝牙电池，以及 Mac 本机电池，圆形指示器展示。
+- **高占用进程**：按内存 / CPU 排序，支持终止、强制退出（需再次确认）。
+- **软件卸载**：点按面板顶部评分卡片进入独立窗口，按名称 / 占用体积 / 最近使用 / 安装时间排序，批量选择应用并逐项核对关联文件后移入废纸篓。
+- **启动项管理**：按来源分组列出登录项、LaunchAgent 与 LaunchDaemon，一键启用 / 禁用。
+- **应用列表缓存**：扫描结果缓存到本地，缓存时长可在设置中调整（默认 30 天）。
+
+## 📸 界面预览
+
+| 🖥️ 监控面板 | 🗑️ 软件卸载 | ⚙️ 启动项 |
+| --- | --- | --- |
+| <img src="docs/screenshot-monitor.png" width="300" alt="监控面板" /> | <img src="design-demos/images/uninstall.png" width="300" alt="软件卸载" /> | <img src="design-demos/images/start-item.png" width="300" alt="启动项" /> |
+| 实时系统状态总览 | 按需选择并核对关联文件后移入废纸篓 | 按来源分组管理开机自启项 |
+
+> 更多界面的静态展示与可点击原型见 [docs/uninstall-design.md](docs/uninstall-design.md) 与 [docs/uninstall-prototype.html](docs/uninstall-prototype.html)（原型使用演示数据，不会移动文件）。
+
+## 🚀 安装
+
+### 直接运行（推荐）
+
+从 [Releases](../../releases) 下载最新版 `v5xs.dmg`，将 v5xs 拖入“应用程序”文件夹即可。
+
+### 从源码构建
+
+需要 **macOS 14+**、**Swift 6** 与对应版本的 macOS SDK。推荐使用完整版 Xcode：
 
 ```bash
 swift test
@@ -17,35 +44,60 @@ swift build
 open dist/v5xs.app
 ```
 
-当前机器的 Command Line Tools 编译器和 SwiftPM 库版本不匹配。仓库提供直接编译脚本作为替代：
+若当前机器 Command Line Tools 的编译器与 SwiftPM 库版本不匹配，可直接使用脚本（无需安装完整 Xcode）：
 
 ```bash
-bash scripts/test-local.sh
-bash scripts/build-app.sh
+bash scripts/test-local.sh   # 运行测试
+bash scripts/build-app.sh    # 构建 .app
 open dist/v5xs.app
 ```
 
-制作带 Applications 拖拽入口的 DMG：
+构建界面安装包（带 Applications 拖拽入口的 DMG）：
 
 ```bash
 bash scripts/build-dmg.sh
 ```
 
-DMG 打包脚本使用 `uv` 获取 `dmgbuild`，并按 `scripts/dmg-settings.py` 配置安装窗口。
+> DMG 脚本使用 `uv` 获取 `dmgbuild`。如需指定 SDK，设置 `MACOS_SDK=/path/to/MacOSX.sdk`。
 
-如需使用不同的 SDK，设置 `MACOS_SDK=/path/to/MacOSX.sdk`。本机的直接构建脚本优先使用已安装的 macOS 15.4 SDK，以规避本机 26.4 SDK 与 Swift 编译器的补丁版本冲突。
+## 🖱️ 使用
 
-## 数据与限制
+- **左键点击菜单栏动物**：打开 / 关闭监控面板。
+- **右键点击菜单栏动物**：切换动物形象、暂停动画、设置登录启动、进入设置或退出。
+- **点按面板顶部评分卡片**：打开软件卸载窗口。
+- 卸载窗口顶部可切换 **卸载 / 启动项** 两个标签页。
 
-- CPU 使用率、内存、磁盘、网络、本机电量和进程来自实时系统数据。
-- CPU 核数来自 `ProcessInfo`，性能／能效核拓扑在可读时来自系统 `sysctl`；GPU 核数来自 System Profiler，GPU 活跃度来自支持该字段的 `IOAccelerator` 注册表。
-- CPU／GPU 摄氏度通过本机验证的 `Mac14,2` SMC 键读取；其他机型或读取失败时显示“—”，并继续展示系统热状态。GPU 注册表字段和 SMC 键不保证跨机型可用。
-- 可用空间来自系统磁盘容量，蓝色进度条表示已用比例；磁盘读写速率来自设备累计字节数的差值，设备不可读时显示“—”。
-- 顶部状态评分由热状态、CPU 使用率和内存占用估算，不代表硬件诊断结果；缺少必要数据时显示“—”。芯片、内存、macOS 版本和运行时长来自本机信息。
-- 网络与温度在同一行显示；网络卡片展示最近 1 分钟的下载／上传曲线。低延迟模式将采样间隔由 1 秒调整为 0.5 秒。
-- 鼠标和键盘电量优先从已连接设备的标准 BLE 电池服务读取，每 15 秒更新；系统蓝牙报告与 HID 电量字段作为回退。按系统报告的设备类型匹配鼠标或键盘；设备不公开电量时显示空环和“—”。
-- 进程终止依赖应用权限；仅对当前仍可确认身份的 GUI 应用执行。强制退出须再次确认，未保存的数据可能丢失。沙盒分发不能使用这些跨应用终止操作。
-- 点按面板顶部的综合评分卡片打开独立的“软件卸载”窗口，可搜索、按名称／占用体积／最近使用／安装时间排序，批量选择应用并逐项核对关联文件。最近使用来自 Spotlight（不可读时显示“未知”），安装时间取应用目录创建时间；大小为扫描估算。扫描 `/Applications`、`~/Applications`、`/Library/Input Methods` 与 `~/Library/Input Methods`，每个位置向下最多三层（可发现 `~/Applications/Chrome Apps.localized` 这类子目录里的 App），跳过 Apple 系统应用、指向系统的符号链接和 v5xs 自身；不扫描外接卷与 Homebrew Caskroom。关联文件会按 Bundle ID 扫描当前用户 Library 下的 Application Support、Caches、Containers（含 helper 容器）、WebKit、HTTPStorages、Cookies（binarycookies）、Application Scripts（含 helper 脚本）、Saved Application State、Preferences（含 ByHost）、Logs、LaunchAgents，以及最近使用记录（sfl3／sfl4）和系统临时缓存目录；找不到 Bundle ID 对应目录时，再按应用名匹配 Application Support／Caches 并标注“按名称”。共享的 Group Containers、系统级 /Library 路径与归属不明的文件不会列入。运行中的应用、已失效的归属校验路径不会被移走。确认后使用系统废纸篓，操作可能受文件权限限制。安装应用列表带缓存：首次打开卸载窗口扫描并缓存到 `~/Library/Application Support/installed-apps.json`，缓存期内再次打开直接读取；缓存时长默认 30 天，可在设置里改为 1–365 天；点刷新总是重扫并用最新数据重建缓存。
-- 卸载窗口包含「卸载 / 启动项」两个 tab：「启动项」按来源分组展示开机自启项，顶部三张仪表卡汇总，开关真实修改 LaunchAgent / 本应用登录项。
-- 卸载界面的五个静态状态（入口、列表、批量选择、关联文件、确认移除）和可点击的原型见 `docs/uninstall-design.md` 与 `docs/uninstall-prototype.html`；HTML 使用演示数据，不会移动文件。
-- 尚未接入持久历史记录、其他机型的温度传感器适配或发布签名。`dist/` 下为本机临时签名构建。
+## 🧭 数据与限制
+
+- CPU 使用率、内存、磁盘、网络、本机电量与进程均来自实时系统数据。
+- CPU 核数与性能 / 能效核拓扑来自 `ProcessInfo` / `sysctl`；GPU 核数与活跃度来自 System Profiler / `IOAccelerator`。
+- CPU / GPU 温度通过已验证的 `Mac14,2` SMC 键读取；其他机型或读取失败时显示 “—” 并继续展示系统热状态。
+- 顶部状态评分由热状态、CPU 使用率与内存占用**估算**，不代表硬件诊断结果。
+- 软件卸载：最近使用来自 Spotlight（不可读时显示“未知”），大小为扫描估算；关联文件会扫描当前用户 `~/Library` 下与 Bundle ID 匹配的路径，共享文件与归属不明的路径不自动选中；确认后调用系统废纸篓。应用列表带缓存（默认 30 天，可在设置中调整）。
+- 启动项：登录项、LaunchAgent / LaunchDaemon 按来源分组展示。用户级代理可直接开关；系统级代理与守护进程需管理员权限；第三方登录项建议在“系统设置 → 通用 → 登录项”中管理。
+- 进程终止依赖应用权限，仅对当前仍可确认身份的 GUI 应用执行；**沙盒分发不能使用这些跨应用终止操作**。
+
+## ✅ 测试环境
+
+| 项目 | 版本 / 型号 |
+| --- | --- |
+| 操作系统 | macOS 26.4 (build 25E246) |
+| 芯片 | Apple M2 (arm64) |
+| 机型 | MacBook Air (Mac14,2) |
+| 编译器 | Swift 6 / macOS SDK |
+
+> 温度读取针对 `Mac14,2` SMC 键验证；其他机型或缺失数据时相关指标显示 “—”，其余功能不受影响（详见“数据与限制”）。
+## 🧰 技术栈
+
+- Swift 6 · SwiftUI · AppKit · Charts
+- Swift Package Manager（`Package.swift`）
+- 采样：CPU / GPU / 网络 1 秒一采样，温度与其余指标较慢；数据保留有界历史。
+
+## 📄 License
+
+[MIT](LICENSE) © 2026 [zhuyanwei](mailto:zyw090111@163.com)
+
+## 🙏 致谢
+
+- 界面设计参考 [docs/prototype.svg](docs/prototype.svg) 与 [docs/uninstall-design.md](docs/uninstall-design.md)。
+- 卸载交互设计参考 [Mole](https://github.com/tw93/Mole) 的产品思路（实现独立，不依赖其代码）。
