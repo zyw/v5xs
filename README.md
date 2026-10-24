@@ -1,3 +1,5 @@
+<p align="center"><strong>简体中文</strong> | <a href="README_EN.md">English</a></p>
+
 # v5xs
 
 在 macOS 菜单栏养一只「跑得越快越忙」的小动物，随时查看 CPU、GPU、内存、磁盘、网络与温度的实时状态；顺带清理不再需要的应用和开机自启项。
