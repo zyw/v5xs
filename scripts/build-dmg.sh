@@ -3,7 +3,11 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 app_dir="$project_dir/dist/v5xs.app"
-output="$project_dir/dist/v5xs.dmg"
+version="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$app_dir/Contents/Info.plist")"
+os_name="macOS"
+os_version="$(sw_vers -productVersion)"
+architecture="$(uname -m)"
+output="$project_dir/dist/v5xs-$version-$os_name-$os_version-$architecture.dmg"
 workdir="$(mktemp -d /private/tmp/v5xs-dmg.XXXXXX)"
 trap 'rm -rf "$workdir"' EXIT
 
