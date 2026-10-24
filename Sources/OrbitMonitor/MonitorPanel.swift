@@ -15,6 +15,8 @@ private enum Palette {
 struct MonitorPanel: View {
     @ObservedObject var store: MonitorStore
     let onOpenSettings: () -> Void
+    let onOpenUninstaller: () -> Void
+    @State private var headerHovering = false
     private var chartPoints: [NetworkPoint] {
         let start = Date().addingTimeInterval(-60)
         return store.networkHistory.filter { $0.time >= start }
@@ -81,7 +83,30 @@ struct MonitorPanel: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(11)
         .background(Palette.card, in: RoundedRectangle(cornerRadius: 13))
-        .help("状态评分由系统热状态、CPU 使用率和内存占用估算；缺少数据时显示破折号")
+        .overlay(
+            RoundedRectangle(cornerRadius: 13)
+                .strokeBorder(headerHovering ? Palette.mint.opacity(0.55) : .clear, lineWidth: 1)
+        )
+        .overlay(alignment: .topTrailing) {
+            if headerHovering {
+                Text("软件卸载 ↗")
+                    .font(.system(size: 10, weight: .semibold))
+                    .foregroundStyle(Palette.mint)
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(Palette.background.opacity(0.82), in: Capsule())
+                    .padding(8)
+                    .transition(.opacity)
+            }
+        }
+        .contentShape(RoundedRectangle(cornerRadius: 13))
+        .onTapGesture { onOpenUninstaller() }
+        .onHover { hovering in
+            withAnimation(.easeOut(duration: 0.12)) { headerHovering = hovering }
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("打开软件卸载窗口")
+        .help("点按综合评分打开软件卸载；评分由系统热状态、CPU 使用率和内存占用估算，缺少数据时显示破折号")
     }
 
     private func badge(_ text: String) -> some View {

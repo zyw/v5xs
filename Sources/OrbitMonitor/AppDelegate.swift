@@ -7,6 +7,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let statusItem = NSStatusBar.system.statusItem(withLength: 34)
     private let popover = NSPopover()
     private var settingsWindow: NSWindow?
+    private var uninstallerWindow: NSWindow?
     private var previewWindow: NSWindow?
     private var animationTimer: Timer?
     private var animationFrame = 0
@@ -18,6 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let panelController = NSHostingController(
             rootView: MonitorPanel(store: store, onOpenSettings: { [weak self] in
                 self?.openSettings()
+            }, onOpenUninstaller: { [weak self] in
+                self?.openUninstaller()
             })
         )
         panelController.sizingOptions = [.preferredContentSize]
@@ -46,6 +49,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.contentView = NSHostingView(
                 rootView: MonitorPanel(store: store, onOpenSettings: { [weak self] in
                     self?.openSettings()
+                }, onOpenUninstaller: { [weak self] in
+                    self?.openUninstaller()
                 })
             )
             window.center()
@@ -157,6 +162,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         settingsWindow?.center()
         settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    private func openUninstaller() {
+        if uninstallerWindow == nil {
+            let window = NSWindow(
+                contentRect: NSRect(x: 0, y: 0, width: 900, height: 680),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "v5xs · 软件卸载"
+            window.minSize = NSSize(width: 720, height: 480)
+            window.contentView = NSHostingView(rootView: UninstallerPanel())
+            uninstallerWindow = window
+            window.center()
+        }
+        uninstallerWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
     }
 
