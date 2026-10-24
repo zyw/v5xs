@@ -1,0 +1,35 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:900px;height:383px;overflow:hidden;background:#0C110E;font-family:"PingFang SC","Hiragino Sans GB",sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{width:900px;height:383px;position:relative;background:
+ linear-gradient(180deg,#0C110E 0%,#101915 55%,#14201C 100%);display:flex;align-items:center;padding:0 40px 0 46px;gap:24px}
+.txt{flex:1;z-index:2}
+.eyebrow{font-size:13px;color:#8ED8B3;font-weight:600;letter-spacing:0.28em;text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:26px;height:2px;background:#8ED8B3}
+h1{font-size:52px;line-height:1.14;color:#F0F6F1;font-weight:800;letter-spacing:-0.02em}
+h1 .hl{background:linear-gradient(90deg,#8ED8B3,#3FA9A0);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:16px;color:#8FA397;margin-top:16px;line-height:1.7}
+.divider{width:2px;height:220px;background:linear-gradient(180deg,transparent,#2c3f34,#2c3f34,transparent);flex:0 0 2px}
+.metric{flex:0 0 auto;display:flex;flex-direction:column;gap:14px;width:330px}
+.row{display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid #24362c;border-radius:14px;background:rgba(30,40,36,0.8)}
+.row .ic{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:16px;background:rgba(142,216,179,0.14)}
+.row .tt{font-size:14px;color:#A9BCAE}
+.row .vv{font-size:18px;font-weight:700;color:#EDF4EE;margin-left:auto}
+.big-badge{position:absolute;right:34px;bottom:26px;z-index:1;display:flex;align-items:center;gap:8px;background:rgba(142,216,179,0.1);border:1px solid rgba(142,216,179,0.3);padding:8px 16px;border-radius:30px;font-size:14px;color:#8ED8B3}
+</style></head><body>
+<div class="wrap">
+  <div class="txt">
+    <div class="eyebrow">MAC SOFTWARE OF THE WEEK</div>
+    <h1>一个软件<br>把 Mac 的<em class="hl">秘密全看了</em></h1>
+    <div class="sub">回收的不止是空间<br>还有你开机后那几秒等待的耐心</div>
+  </div>
+  <div class="divider"></div>
+  <div class="metric">
+    <div class="row"><span class="ic">🐿️</span><span class="tt">菜单栏动物</span><span class="vv">随负载奔跑</span></div>
+    <div class="row"><span class="ic">📊</span><span class="tt">系统实时体检</span><span class="vv">一目了然</span></div>
+    <div class="row"><span class="ic">🗑️</span><span class="tt">应用卸载</span><span class="vv">残留横扫</span></div>
+    <div class="row"><span class="ic">⚙️</span><span class="tt">自启管理</span><span class="vv">一键开关</span></div>
+  </div>
+  <div class="big-badge">v5xs · 免费开源</div>
+</div>
+</body></html>

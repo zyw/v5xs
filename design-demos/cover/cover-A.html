@@ -1,0 +1,43 @@
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{width:900px;height:383px;overflow:hidden;background:#0F1714;font-family:"PingFang SC","Hiragino Sans GB",-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{width:900px;height:383px;position:relative;background:
+  radial-gradient(120% 160% at 78% 0%, rgba(61,107,82,0.35), transparent 55%),
+  radial-gradient(140% 140% at 8% 100%, rgba(63,169,160,0.18), transparent 50%),
+  linear-gradient(135deg,#0F1714 0%,#14201C 55%,#182A23 100%);
+  display:flex;align-items:center;padding:0 46px 0 52px;gap:30px}
+.txt{flex:0 0 380px;z-index:2}
+.tag{display:inline-flex;align-items:center;gap:8px;background:rgba(142,216,179,0.14);border:1px solid rgba(142,216,179,0.4);color:#8ED8B3;font-size:15px;font-weight:600;letter-spacing:0.08em;padding:6px 13px;border-radius:30px;margin-bottom:18px}
+.brand{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#A9BCAE;font-weight:600;margin-bottom:8px}
+.brand .dot{width:6px;height:6px;border-radius:50%;background:#8ED8B3;box-shadow:0 0 8px #8ED8B3}
+h1{font-size:44px;line-height:1.2;color:#F0F6F1;font-weight:800;letter-spacing:-0.01em}
+h1 em{font-style:normal;background:linear-gradient(90deg,#8ED8B3,#52BBA6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{font-size:15px;color:#8FA397;margin-top:14px;line-height:1.6}
+.stars{margin-top:18px;font-size:16px;letter-spacing:2px}
+.mock{flex:0 0 auto;position:relative;z-index:1}
+.frame{border-radius:18px;overflow:hidden;border:1px solid #2c3f34;box-shadow:0 30px 70px rgba(0,0,0,0.55), 0 0 0 1px #0004, 0 6px 20px rgba(0,0,0,0.4);background:#0C110E}
+.frame img{display:block;width:250px;height:auto}
+.float{position:absolute;border-radius:12px;border:1px solid #2c3f34;background:#182520;box-shadow:0 16px 40px rgba(0,0,0,0.5);display:flex;align-items:center;gap:8px;padding:10px 14px;font-size:13px;color:#D6E4D8;font-weight:600}
+.float b{color:#8ED8B3;font-size:17px}
+.f1{top:-14px;right:-30px;-webkit-animation:b1 3.4s ease-in-out infinite}
+.f2{bottom:8px;left:-46px;-webkit-animation:b2 4s ease-in-out infinite}
+@-webkit-keyframes b1{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+@-webkit-keyframes b2{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.glow{position:absolute;right:-60px;top:50%;transform:translateY(-50%);width:380px;height:380px;background:radial-gradient(circle, rgba(142,216,179,0.16), transparent 60%);filter:blur(10px);z-index:0}
+</style></head><body>
+<div class="wrap">
+  <div class="glow"></div>
+  <div class="txt">
+    <span class="tag">🍎 Mac 好物推荐</span>
+    <div class="brand"><span class="dot"></span>v5xs · 开源免费</div>
+    <h1>又给我挖到一款<br>Mac 端<em>神仙软件</em></h1>
+    <div class="sub">菜单栏一只小动物 · 系统越忙跑得越快<br>实时体检 · 一键卸载 · 自启管理</div>
+    <div class="stars">⭐⭐⭐⭐⭐</div>
+  </div>
+  <div class="mock">
+    <div class="frame"><img src="screenshot-monitor.png" alt="v5xs"></div>
+    <div class="float f1">✅ 已卸残留 <b>237</b> 项</div>
+    <div class="float f2">🐿️ 小动物随负载奔跑</div>
+  </div>
+</div>
+</body></html>
