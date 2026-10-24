@@ -108,6 +108,8 @@ bash scripts/build-dmg.sh
 
 <!-- 请将下方 URL 中的 `OWNER/REPO` 替换为你实际的 GitHub 仓库路径，例如 `yourname/v5xs` -->
 <p align="center">
-  <img src="https://api.star-history.com/svg?repos=OWNER/REPO&type=Date" alt="Star History">
+  <a href="https://star-history.com/#zyw/v5xs&Date">
+    <img src="https://api.star-history.com/svg?repos=zyw/v5xs&type=Date" alt="v5xs Star History" width="80%">
+  </a>
 </p>
 
