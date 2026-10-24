@@ -101,3 +101,13 @@ bash scripts/build-dmg.sh
 
 - 界面设计参考 [docs/prototype.svg](docs/prototype.svg) 与 [docs/uninstall-design.md](docs/uninstall-design.md)。
 - 卸载交互设计参考 [Mole](https://github.com/tw93/Mole) 的产品思路（实现独立，不依赖其代码）。
+
+## ⭐ Star 趋势
+
+如果你喜欢这个项目，欢迎点个 ⭐ 支持一下！增长趋势如下：
+
+<!-- 请将下方 URL 中的 `OWNER/REPO` 替换为你实际的 GitHub 仓库路径，例如 `yourname/v5xs` -->
+<p align="center">
+  <img src="https://api.star-history.com/svg?repos=OWNER/REPO&type=Date" alt="Star History">
+</p>
+
