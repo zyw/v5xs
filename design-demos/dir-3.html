@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>软件卸载 方向C 日式目录密排</title>
+<style>
+:root{--paper:#FAF8F3;--ink:#221F1A;--red:#B5532A;--sub:#655f55;--faint:#9a9388;--line:#e0dbcf;--hl:#F4D35E}
+*{box-sizing:border-box}body{margin:0;min-width:1120px;background:#ece9e1;color:var(--ink);font-family:"Hiragino Mincho ProN","Songti SC","Noto Serif SC",serif;-webkit-font-smoothing:antialiased}
+button,input{font-family:"Avenir Next","PingFang SC",sans-serif;color:inherit}button{cursor:pointer}
+.sans{font-family:"Avenir Next","PingFang SC",sans-serif}
+.stage{min-height:100vh;display:grid;place-items:center;padding:30px 20px}
+.win{width:1140px;height:800px;display:flex;flex-direction:column;background:var(--paper);border:1px solid #d3cdc0;border-radius:4px;overflow:hidden;box-shadow:0 34px 110px #0003}
+.masthead{display:flex;align-items:baseline;justify-content:space-between;padding:16px 34px 10px;border-bottom:2px solid var(--ink)}
+.mast-name{font-size:22px;font-weight:800;letter-spacing:.02em}.mast-name em{font-style:normal;color:var(--red)}
+.mast-sub{font-size:11px;color:var(--sub);letter-spacing:.14em}.mast-num{font-family:"Avenir Next",sans-serif;font-size:11px;color:var(--faint);letter-spacing:.1em}
+.issuebar{display:flex;align-items:center;justify-content:space-between;padding:9px 34px;border-bottom:1px solid var(--line);font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11px;color:var(--sub);letter-spacing:.03em}
+.issuebar b{font-family:serif;color:var(--ink);font-size:20px;font-weight:700;letter-spacing:.05em}
+.tools{display:flex;align-items:center;gap:10px}
+.search{display:flex;align-items:center;gap:6px;height:30px;padding:0 10px;border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--faint)}.search input{border:0;outline:0;background:transparent;font-size:12px;width:130px}.refresh{height:30px;padding:0 11px;border:1px solid var(--line);border-radius:3px;background:#fff;color:var(--sub);font-size:12px}
+.lead{display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center;padding:22px 34px 14px}
+.lead h2{margin:0;font-size:30px;font-weight:800;letter-spacing:-.01em;line-height:1.2}
+.lead .kicker{font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11px;color:var(--red);letter-spacing:.16em;font-weight:700}
+.lead p{margin:8px 0 0;color:var(--sub);font-size:13px;font-family:"Avenir Next","PingFang SC",sans-serif}
+.lead .meta{font-family:"Avenir Next","PingFang SC",sans-serif;font-size:12px;color:var(--sub);text-align:right;line-height:1.9}
+.lead .meta b{color:var(--red);font-size:15px}
+.tabs{display:flex;gap:2px;padding:2px 34px;border-bottom:1px solid var(--ink)}
+.tabs button{border:0;background:none;padding:8px 18px;font-size:13px;font-weight:700;color:var(--sub);border-bottom:2px solid transparent}.tabs .on{color:var(--ink);border-bottom-color:var(--red)}
+.bar{display:flex;justify-content:space-between;align-items:center;padding:12px 34px 8px;font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11.5px;color:var(--sub)}
+.bar .sorts{display:flex;gap:16px}.bar .sorts button{border:0;background:none;padding:3px 0;font-size:12px;color:var(--sub);font-weight:600}.bar .sorts .on{color:var(--ink);border-bottom:2px solid var(--hl)}
+.list{flex:1;overflow:auto;padding:0 34px 14px;scrollbar-width:thin}
+.row{display:grid;grid-template-columns:38px minmax(0,1fr) auto 28px;gap:16px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+.row.sel{background:linear-gradient(90deg,#F4D35E22,transparent 60%)}
+.num{font-family:"Avenir Next",sans-serif;font-size:15px;font-weight:700;color:var(--red);font-variant-numeric:tabular-nums}
+.id{display:flex;align-items:center;gap:13px;min-width:0}
+.sq{width:42px;height:42px;display:grid;place-items:center;border-radius:6px;color:#fff;font-family:"Avenir Next","PingFang SC",sans-serif;font-weight:800;font-size:18px;background:linear-gradient(135deg,var(--c1),var(--c2))}
+.tx{min-width:0}.nm{font-size:17px;font-weight:800;letter-spacing:.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ver{font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11px;color:var(--faint);margin-top:2px}
+.rc{display:flex;align-items:center;gap:18px}
+.sz{font-family:"Avenir Next","PingFang SC",sans-serif;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.usetime{font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11.5px;color:var(--sub)}.exbtn{border:1px solid var(--line);background:#fff;color:var(--ink);font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11px;padding:4px 9px;border-radius:3px}
+.dotnum{width:26px;height:26px;border-radius:50%;border:1.5px solid var(--ink);display:grid;place-items:center;font-family:"Avenir Next",sans-serif;font-size:12px;font-weight:700}.dotnum.on{background:var(--ink);color:#fff}
+.expand{margin:2px 0 14px 54px;padding:14px 18px;background:#fff;border:1px solid var(--line);border-left:3px solid var(--hl)}
+.exhead{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.exhead .t{font-size:14px;font-weight:800}.exhead .t small{font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11px;color:var(--faint);font-weight:400;margin-left:8px}
+.exhead button{border:0;background:none;font-family:"Avenir Next","PingFang SC",sans-serif;font-size:12px;color:var(--red);font-weight:700}
+.frows{border-top:1px solid var(--line)}
+.frow{display:grid;grid-template-columns:16px 96px minmax(80px,1fr) 70px;gap:10px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12px}
+.frow .chk{width:16px;height:16px;border:1.5px solid #bcb5a6;border-radius:3px;display:grid;place-items:center;color:#fff;font-size:10px}.frow .chk.on{background:var(--ink);border-color:var(--ink)}
+.frow .lab{font-weight:700}
+.frow .path{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow .fsz{text-align:right;font-family:"Avenir Next",sans-serif;font-variant-numeric:tabular-nums;color:var(--sub)}
+.fnote{margin-top:10px;font-family:"Avenir Next","PingFang SC",sans-serif;font-size:11px;color:var(--faint)}
+.footer{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:70px;padding:14px 34px;background:linear-gradient(180deg,#F6F3EC,#EFEBE1);border-top:2px solid var(--ink)}
+.sel{font-family:"Avenir Next","PingFang SC",sans-serif;font-size:13px;display:flex;align-items:center;gap:10px}.sel .cnt{font-size:22px;font-weight:800;color:var(--red);font-variant-numeric:tabular-nums}.sel .amt b{font-variant-numeric:tabular-nums}
+.act{display:flex;align-items:center;gap:12px}.clear{border:1px solid var(--line);background:#fff;padding:9px 16px;border-radius:3px;font-family:"Avenir Next","PingFang SC",sans-serif;font-size:12px;color:var(--sub)}
+.remove{background:var(--ink);color:#fff;border:0;padding:11px 22px;font-family:"Avenir Next","PingFang SC",sans-serif;font-size:13px;font-weight:700}.remove:disabled{background:#cfcac0;color:#fff}
+.modal-back{position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:#221f1a88;backdrop-filter:blur(2px)}.modal{width:460px;padding:26px;background:var(--paper);border:2px solid var(--ink);box-shadow:0 30px 90px #0003}.modal h3{margin:0 0 10px;font-size:21px;font-weight:800}.modal p{margin:8px 0;color:var(--sub);font-family:"Avenir Next","PingFang SC",sans-serif;font-size:13px}.modal ul{margin:12px 0 0;padding:0;list-style:none;max-height:150px;overflow:auto}.modal li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-family:"Avenir Next","PingFang SC",sans-serif;font-size:12.5px}.modal li span:last-child{font-variant-numeric:tabular-nums;color:var(--sub)}.fine{margin-top:14px;padding:8px 10px;background:var(--hl);color:var(--ink);font-size:11.5px;font-family:"Avenir Next","PingFang SC",sans-serif}.modal-act{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.modal-act button{border:1px solid var(--line);background:#fff;padding:9px 18px;font-family:"Avenir Next","PingFang SC",sans-serif;font-size:12.5px}.modal-act .danger{background:var(--ink);color:#fff;border:0}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:12;padding:10px 16px;background:var(--ink);color:#fff;font-size:12.5px;font-family:"Avenir Next","PingFang SC",sans-serif;box-shadow:0 8px 25px #0002}
+</style></head>
+<body><div class="stage"><div class="win">
+<div class="masthead"><div><span class="mast-name">软件<em>卸载</em>目录</span><span class="mast-sub"> UNINSTALL DIRECTORY</span></div><div class="mast-num">VOL.2026 · NO.卸载</div></div>
+<div class="issuebar"><div><b>9</b> 款应用 已安装</div><div>关联文件 <b>47</b> 项</div>
+ <div class="tools"><label class="search">S<input placeholder="搜索应用"></label><button class="refresh">刷新目录</button></div></div>
+<div class="lead"><div><div class="kicker">FEATURE</div><h2>从这台 Mac，<br>决定谁留下。</h2><p>勾选要处理的应用，展开后逐项核对关联文件，再移入废纸篓。</p></div>
+ <div class="meta"><b>占用 4.96 GB</b><br><b>47</b> 项关联文件<br><span style="color:#b08a2e">演示数据 · 不实际删除</span></div></div>
+<div class="tabs"><button class="on">卸载目录</button><button>更新</button><button>启动项</button></div>
+<div class="bar"><div class="sorts"><button>名称</button><button class="on">最近使用</button><button>占用体积</button><button>安装时间</button></div><div class="sorts" style="color:var(--faint)">排序</div></div>
+<div class="list" id="list"></div>
+<div class="footer"><div class="sel" id="sel"></div><div class="act"><button class="clear" id="clear" hidden>取消选择</button><button class="remove" id="remove" disabled>移到废纸篓</button></div></div>
+</div></div><div id="modal"></div><div id="toast"></div>
+<script>
+var fmt=function(mb){return mb>=1024?(mb/1024).toFixed(2)+" GB":mb.toFixed(1)+" MB";};
+var apps=[
+{id:"iina",n:"IINA",v:"1.4.1",sz:209.6,st:"6个月前",live:"old",icon:"P",c:["#3b5a81","#122a46"]},
+{id:"cherry",n:"Cherry Studio",v:"2.1.6",sz:1136,st:"4天前打开",live:"mid",icon:"C",c:["#dd8779","#9c5354"]},
+{id:"notes",n:"v5notes",v:"1.0.2",sz:226.5,st:"2天前",live:"mid",icon:"v5",c:["#e9ad65","#a96c40"]},
+{id:"xc",n:"XTerminal",v:"4.3.7",sz:493.4,st:"2天前",live:"mid",icon:"X",c:["#8dc191","#366450"]},
+{id:"api",n:"Apifox",v:"2.8.47",sz:769.4,st:"2天前",live:"mid",icon:"A",c:["#e38b81","#b2525b"]},
+{id:"wps",n:"WPS Office",v:"12.1",sz:1956,st:"活跃中",live:"live",icon:"W",c:["#d28b70","#97544e"]},
+{id:"filee",n:"Filee",v:"1.12.0",sz:249.3,st:"2天前",live:"mid",icon:"F",c:["#a69cca","#5b689c"]},
+{id:"loop",n:"Loop",v:"1.4.2",sz:31.9,st:"活跃中",live:"live",icon:"O",c:["#738bab","#3b506d"]}];
+var fsI=[["App","/Applications/IINA.app","209.6 MB"],["App支持文件","~/Library/Application Support/com.colliderli.iina","26.9 MB"],["WebKit","~/Library/WebKit/com.colliderli.iina","647 KB"],["临时缓存","/private/var/folders/9m/.../C/com.colliderli.iina","205 KB"],["容器","~/Library/Containers/com.colliderli.iina.OpenInIINA","4 KB"],["最近使用",".../ApplicationRecentDocuments/com.colliderli.iina.sfl4","3 KB"],["偏好设置","~/Library/Preferences/com.colliderli.iina.plist","803 B"],["App脚本","~/Library/Application Scripts/com.colliderli.iina.OpenInIINA","0 KB"]];
+function files(a){if(a.id==="iina")return fsI;return [["App","/Applications/"+a.n+".app",fmt(a.sz)],["支持文件","~/Library/Application Support/"+a.id,fmt(a.ex||a.sz*0.05)]];}
+var sel=new Set(),exp=new Set(),pick=new Set();
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function mbv(f){var x=parseFloat(f[2]);if(/GB/.test(f[2]))return x*1024;if(/MB/.test(f[2]))return x;if(/KB/.test(f[2]))return x/1024;return x/1048576;}
+function amt(a){return (pick.has(a.id+":app")?a.sz:0)+files(a).filter(function(f){return pick.has(a.id+":"+f[0]);}).reduce(function(s,f){return s+mbv(f);},0);}
+function chk(o,attr){return '<button '+(attr||"")+' class="chk '+(o?"on":"")+'">'+(o?"OK":"")+"</button>";}
+function render(){
+ document.getElementById("list").innerHTML=apps.map(function(a,idx){
+  var on=sel.has(a.id),open=exp.has(a.id);
+  var aSelf=pick.has(a.id+":app")?a.sz:0;
+  var aFiles=files(a).filter(function(f){return pick.has(a.id+":"+f[0]);}).reduce(function(s,f){return s+mbv(f);},0);
+  var extra=Math.max(0,aSelf+aFiles-a.sz);
+  var detail=open?'<div class="expand"><div class="exhead"><span class="t">清除 '+esc(a.n)+'<small>逐项核对后可取消勾选</small></span><button data-toggle="'+a.id+'">收起 上</button></div>'+
+   '<div class="frows">'+files(a).map(function(f){var k=a.id+":"+f[0],onp=pick.has(k);
+     return '<div class="frow">'+chk(onp,'data-pick="'+esc(k)+'"')+'<span class="lab">'+esc(f[0])+'</span><span class="path">'+esc(f[1])+'</span><span class="fsz">'+esc(f[2])+'</span></div>';}).join("")+
+   '</div><div class="fnote">只列出与该应用标识完全匹配的文件，共享文件不自动勾选</div></div>':"";
+  return '<div class="row '+(on?"sel":"")+'">'+
+   '<div class="num">'+String(idx+1).padStart(2,"0")+'</div>'+
+   '<div class="id"><div class="sq" style="--c1:'+a.c[0]+';--c2:'+a.c[1]+'">'+esc(a.icon)+'</div><div class="tx"><div class="nm">'+esc(a.n)+'</div><div class="ver">v'+a.v+' · '+esc(a.st)+'</div></div></div>'+
+   '<div class="rc"><div class="sz">'+fmt(a.sz)+'</div><span class="usetime">'+esc(a.st)+'</span>'+(on?'<button class="exbtn" data-toggle="'+a.id+'">'+(open?"收":"展开")+'</button>':'')+'</div>'+
+   '<div class="dotnum '+(on?"on":"")+'" data-app="'+a.id+'">'+(on?"OK":"")+'</div>'+
+  '</div>'+detail;
+ }).join('');
+ var chosen=apps.filter(function(a){return sel.has(a.id);});
+ var gb=chosen.reduce(function(s,a){return s+amt(a);},0);
+ $("sel").innerHTML=chosen.length?'<span class="cnt">'+chosen.length+'</span><span>款应用</span><span class="amt">预计 <b>'+fmt(gb)+'</b></span>':'<span style="color:#9a9388">未选择应用</span>';
+ $("remove").disabled=!chosen.length;$("remove").textContent=chosen.length?("移到废纸篓 "+chosen.length+" 项"):"移到废纸篓";$("clear").hidden=!chosen.length;
+}
+function pickAll(a){files(a).forEach(function(f){pick.add(a.id+":"+f[0]);});if(a.id!=="iina")pick.add(a.id+":app");}
+document.getElementById("list").addEventListener("click",function(e){
+ var app=e.target.closest("[data-app]"),tg=e.target.closest("[data-toggle]"),pk=e.target.closest("[data-pick]");
+ if(app){var a=apps.find(function(x){return x.id===app.dataset.app;});if(!a)return;if(sel.has(a.id)){sel.delete(a.id);exp.delete(a.id);}else{sel.add(a.id);pickAll(a);}render();return;}
+ if(tg){var id=tg.dataset.toggle;if(exp.has(id))exp.delete(id);else exp.add(id);render();return;}
+ if(pk){var k=pk.dataset.pick;if(pick.has(k))pick.delete(k);else pick.add(k);render();}
+});
+$("clear").addEventListener("click",function(){sel.clear();exp.clear();render();});
+$("remove").addEventListener("click",function(){var c=apps.filter(function(a){return sel.has(a.id);});
+ $("modal").innerHTML='<div class="modal-back"><div class="modal"><h3>确认移入废纸篓？</h3><p>将处理 '+c.length+' 款应用及其关联文件。</p><ul>'+c.map(function(a){return '<li><span>'+esc(a.n)+'</span><span>'+fmt(amt(a))+'</span></li>';}).join("")+'</ul><p class="fine">演示原型 不会移动或删除真实文件</p><div class="modal-act"><button id="cm">返回核对</button><button class="danger" id="cf">移入废纸篓（演示）</button></div></div></div>';
+ $("cm").onclick=function(){$("modal").innerHTML="";};$("cf").onclick=function(){$("modal").innerHTML="";var t=document.getElementById("toast");t.innerHTML='<div class="toast">演示完成 实际会把所选文件移到废纸篓</div>';setTimeout(function(){t.innerHTML="";},2400);};});
+render();
+</script>
+</body></html>

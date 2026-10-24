@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>启动项 方向A 来源分组</title>
+<style>
+:root{--bg:#1E2824;--panel:#26332C;--panel-hi:#2B3A30;--line:#384A3E;--ink:#EDF4EE;--muted:#A9BCAE;--faint:#7C9082;--mint:#8ED8B3;--mintdeep:#3D6B52;--teal:#3FA9A0;--amber:#E9C87A}
+*{box-sizing:border-box}body{margin:0;min-width:1040px;background:#141b18;color:var(--ink);font-family:"PingFang SC","Hiragino Sans GB",-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}.sans,a{font-family:inherit}
+.stage{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.win{width:1120px;height:800px;display:flex;flex-direction:column;background:var(--bg);border:1px solid #3b4f42;border-radius:20px;overflow:hidden;box-shadow:0 40px 120px #000a}
+.tbar{display:flex;align-items:center;gap:12px;height:52px;padding:0 20px;flex:none;background:linear-gradient(180deg,#24332B,#202B26);border-bottom:1px solid var(--line)}
+.lights{display:flex;gap:8px;margin-right:6px}.light{width:12px;height:12px;border-radius:50%}.r{background:#e0705f}.y{background:#e2b04a}.g{background:#63c554}.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--mint),var(--teal));display:grid;place-items:center;color:#0d2418;font-weight:900;font-size:16px}.tbar .an{font-size:14px;font-weight:700}.tbar .an b{color:var(--mint)}.tbar .sub{font-size:11px;color:var(--faint)}.tbar .sp{flex:1}
+.segs{display:flex;align-items:center;gap:14px}
+.seg{display:flex;padding:3px;background:#202D27;border:1px solid var(--line);border-radius:12px}
+.seg button{border:0;background:transparent;color:var(--muted);padding:8px 24px;border-radius:9px;font-size:13px;font-weight:600}
+.seg button.on{background:#36503F;color:#EAF7EE;box-shadow:inset 0 0 0 1px #4A6B57}
+.hero{display:flex;align-items:center;gap:22px;padding:20px 28px 12px;flex:none}
+.hlabel{font-size:11px;color:var(--faint)}
+.hnum{font-size:38px;font-weight:800;background:linear-gradient(90deg,var(--mint),var(--teal));-webkit-background-clip:text;background-clip:text;color:transparent;font-variant-numeric:tabular-nums}
+.hunit{font-size:13px;color:var(--muted)}
+.hbadge{font-size:12px;font-weight:700;background:var(--mint);color:#0d2418;padding:4px 11px;border-radius:999px}
+.hsp{flex:1}.htags{display:flex;gap:8px}.htag{font-size:11.5px;padding:6px 12px;border-radius:999px;font-weight:600}.htag.g{background:rgba(169,188,174,.13);color:var(--muted)}.htag.m{background:rgba(142,216,179,.16);color:var(--mint)}
+.list{flex:1;overflow:auto;padding:4px 24px 14px;scrollbar-width:thin}
+.group{margin-bottom:16px}
+.ghead{display:flex;align-items:center;justify-content:space-between;padding:12px 6px 8px;border-top:1px solid var(--line)}
+.ghead .gt{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.02em}
+.ghead .gn{font-size:11px;color:var(--faint)}
+.row{display:grid;grid-template-columns:40px minmax(0,1fr) auto auto 92px;gap:14px;align-items:center;padding:11px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:7px;transition:background .12s}
+.row:hover{background:var(--panel-hi)}
+.ic{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px;background:linear-gradient(135deg,var(--c1),var(--c2))}
+.nm{font-size:14px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pth{margin-top:2px;font-family:ui-monospace,Menlo,monospace;font-size:10.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.owner{font-size:11.5px;color:var(--faint);white-space:nowrap}
+.tgl{width:44px;height:25px;border-radius:999px;border:0;position:relative;background:#3a4b40;transition:background .15s}
+.tgl.on{background:var(--mint)}
+.tgl::after{content:"";position:absolute;top:2.5px;left:3px;width:20px;height:20px;border-radius:50%;background:#e9f2ec;box-shadow:0 1px 3px #0006;transition:left .15s}
+.tgl.on::after{left:21px}
+.act{display:flex;align-items:center;gap:6px}
+.act .info{width:26px;height:26px;border-radius:7px;border:1px solid var(--line);background:transparent;color:var(--faint);font-size:12px}
+.act .info:hover{color:var(--mint);border-color:var(--mint)}
+.footer{flex:none;display:flex;align-items:center;justify-content:space-between;min-height:64px;padding:12px 26px;background:linear-gradient(180deg,#202C27,#1D2722);border-top:1px solid var(--line);color:var(--faint);font-size:12px}
+.footer b{color:var(--minted);font-variant-numeric:tabular-nums}
+</style></head>
+<body><div class="stage"><div class="win">
+<div class="tbar">
+ <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+ <div class="logo">V</div><span class="an">v5xs <b>启动项</b></span><span class="sub">开机自启管理</span><div class="sp"></div>
+</div>
+<div class="hero">
+ <div class="htags"><span class="hbadge">启动项</span></div><div class="hsp"></div>
+ <div class="htags"><span class="htag g">共 <b id="c1">12</b> 项</span><span class="htag m">已启用 <b id="c2">9</b> 项</span></div>
+</div>
+<div class="list" id="list"></div>
+<div class="footer"><span>启动项指随系统登录自动运行的程序。系统代理与守护进程需要更高权限。</span><span>仅展示 · 开关为原型演示</span></div>
+</div></div>
+<script>
+var DATA=[
+{group:"用户登录项",note:"登录时自动启动",items:[
+ {n:"PixPin",o:"截图与标注",hr:"SMAppService",c:["#e9807f","#a94a4d"]},{n:"v5xs",o:"系统监控",hr:"SMAppService",c:["#8ED8B3","#3FA9A0"]},
+ {n:"uTools",o:"效率工具",hr:"SMAppService",c:["#7a8bc0","#44507e"]},{n:"Clash Verge",o:"网络代理",hr:"SMAppService",c:["#e8a87c","#b06b3e"]},
+ {n:"Loop",o:"窗口管理",hr:"SMAppService",c:["#738bab","#3b506d"]}]},
+{group:"用户代理",note:"~/Library/LaunchAgents",items:[
+ {n:"Clash Verge",o:"网络代理",hr:"io.github.clash-verge-rev.clash-verge-rev.plist",c:["#e8a87c","#b06b3e"],off:true},
+ {n:"magpie",o:"AI 助手",hr:"com.yetone.magpie.plist",c:["#9a8bc8","#5d4c8c"]},
+ {n:"TieZ",o:"贴纸工具",hr:"TieZ.plist",c:["#e98f7f","#a94a4d"]},
+ {n:"Google Updater",o:"硬件加速",hr:"com.google.GoogleUpdater.wake.plist",c:["#8db8e3","#3f6f9e"]},
+ {n:"小旺AI截图",o:"截图工具",hr:"小旺AI截图.plist",c:["#e9c87a","#b08a3e"]}]},
+{group:"系统代理",note:"/Library/LaunchAgents",items:[
+ {n:"搜狗输入法服务",o:"输入法",hr:"com.sogou.SogouServices.plist",c:["#8dc1b8","#3f7a6e"]}]},
+{group:"守护进程",note:"/Library/LaunchDaemons",items:[
+ {n:"Docker 引擎",o:"容器",hr:"com.docker.vmnetd.plist",c:["#6f9ede","#31508e"]},
+ {n:"ClashX 代理助手",o:"网络",hr:"com.west2online.ClashX.ProxyConfigHelper.plist",c:["#e8a87c","#b06b3e"]}]}];
+var $=function(id){return document.getElementById(id);};
+function render(){
+ var onCount=0;
+ $("list").innerHTML=DATA.map(function(g){
+  var rows=g.items.map(function(it){ if(!it.off)onCount++; if(it.on)onCount++;
+   return '<div class="row"><div class="ic" style="--c1:'+it.c[0]+';--c2:'+it.c[1]+'">'+it.n[0]+'</div>'+
+   '<div><div class="nm">'+it.n+'</div><div class="pth">'+it.o+' · '+it.hr+'</div></div>'+
+   '<span class="owner">'+g.group+'</span>'+
+   '<button class="tgl '+(it.off?"":"on")+'" onclick="this.classList.toggle(\'on\')"></button>'+
+   '<div class="act"><button class="info">i</button></div></div>';}).join("");
+  return '<div class="group"><div class="ghead"><span class="gt">'+g.group+'</span><span class="gn">'+g.note+'</span></div>'+rows+'</div>';
+ }).join("");
+ // recount
+ onCount=0;document.querySelectorAll(".tgl.on").forEach(function(t){onCount++;});
+ $("c2").textContent=onCount;
+}
+render();
+</script>
+</body></html>

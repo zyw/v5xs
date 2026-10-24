@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>软件卸载 · 与监控面板一致</title>
+<style>
+:root{
+  --bg:#1E2824; --panel:#26332C; --panel-hi:#2B3A30; --line:#384A3E;
+  --ink:#EDF4EE; --muted:#A9BCAE; --faint:#7C9082;
+  --mint:#8ED8B3; --mint-deep:#3D6B52; --amber:#E9C87A; --danger:#E89A8A;
+  --icon-grad:linear-gradient(120deg,#8ED8B3,#3FA9A0);
+  --r:14px;
+}
+*{box-sizing:border-box}
+body{margin:0;min-width:1080px;background:#141b18;color:var(--ink);font-family:"PingFang SC","Hiragino Sans GB",-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.stage{min-height:100vh;display:grid;place-items:center;padding:26px 16px}
+.win{width:1160px;height:800px;display:flex;flex-direction:column;background:var(--bg);border:1px solid #3b4f42;border-radius:20px;overflow:hidden;box-shadow:0 40px 120px #000a}
+.tbar{position:relative;display:flex;align-items:center;gap:12px;height:52px;padding:0 20px;flex:none;background:linear-gradient(180deg,#24332B,#202B26);border-bottom:1px solid var(--line)}
+.tbar .logo{width:30px;height:30px;border-radius:9px;background:url("v5xs-logo.png") center/cover no-repeat;box-shadow:0 3px 10px #0006}
+.tbar .appname{font-size:14px;font-weight:700;letter-spacing:.01em}
+.tbar .appname b{color:var(--mint)}
+.tbar .sub{font-size:11px;color:var(--faint);margin-left:4px}
+.lights{display:flex;gap:8px;margin-right:6px}.light{width:12px;height:12px;border-radius:50%}.r{background:#e0705f}.y{background:#e2b04a}.g{background:#63c554}
+.tbar .sp{flex:1}
+.cur{font-size:11px;color:var(--faint);font-variant-numeric:tabular-nums}
+.hero{display:flex;align-items:center;gap:24px;padding:18px 26px 12px;flex:none}
+.hero .metric{display:flex;align-items:baseline;gap:10px}
+.hero .metric .ml{font-size:11px;color:var(--faint)}
+.hero .metric .mv{font-size:44px;font-weight:800;letter-spacing:-.02em;font-variant-numeric:tabular-nums;background:var(--icon-grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .metric .mu{font-size:14px;color:var(--muted)}
+.hero .metric .md{font-size:12px;color:#1b3a2a;font-weight:700;background:var(--mint);padding:4px 11px;border-radius:999px}
+.hero .sp2{flex:1}
+.hero .tags{display:flex;gap:8px}
+.hero .tag{font-size:11.5px;padding:6px 12px;border-radius:999px;font-weight:600}
+.hero .tag.gray{background:rgba(169,188,174,.13);color:var(--muted)}
+.hero .tag.mint{background:rgba(142,216,179,.16);color:var(--mint)}
+.hero .tag.amber{background:rgba(233,200,122,.15);color:var(--amber)}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:4px 26px 6px;flex:none}
+.segs{display:flex;padding:3px;background:#202D27;border:1px solid var(--line);border-radius:12px}
+.segs button{border:0;background:transparent;color:var(--muted);padding:7px 18px;border-radius:9px;font-size:12.5px;font-weight:600}
+.segs button.on{background:#36503F;color:#EAF7EE;box-shadow:inset 0 0 0 1px #4A6B57}
+.toolrow{display:flex;align-items:center;gap:6px}
+.sorts{display:flex;gap:2px}
+.sorts button{border:0;background:none;color:var(--faint);padding:6px 9px;border-radius:7px;font-size:12px;font-weight:600}
+.sorts button.on{color:var(--mint)}
+.sorts button.on::after{content:"";display:block;height:2px;width:70%;margin:3px auto 0;background:var(--mint);border-radius:2px}
+.sep{width:1px;height:20px;background:var(--line);margin:0 8px}
+.search{display:flex;align-items:center;gap:7px;height:34px;padding:0 10px;border:1px solid transparent;border-radius:9px;color:var(--faint);background:transparent;transition:all .18s}
+.search:focus-within{border-color:var(--mint-deep);background:#223129}
+.search input{width:0;border:0;outline:0;background:transparent;font-size:12.5px;color:var(--ink);transition:width .18s}
+.search:focus-within input{width:150px}
+.search svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.refresh{width:34px;height:34px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--mint);font-size:15px}
+.countline{display:flex;justify-content:space-between;align-items:center;padding:2px 28px 10px;color:var(--muted);font-size:12px;flex:none}
+.countline b{color:#DFE9E0;font-weight:650}
+.countline .demo{color:var(--amber);font-size:11px}
+.list{flex:1;overflow:auto;padding:0 20px 12px;scrollbar-width:thin}
+.card{margin-bottom:8px;border:1px solid var(--line);border-radius:var(--r);background:var(--panel);transition:border-color .15s,background .15s,transform .15s}
+.card:hover{background:var(--panel-hi)}
+.card.sel{border-color:#4A7A5C;background:linear-gradient(90deg,#26382E,#222F29)}
+.card-top{display:grid;grid-template-columns:44px minmax(0,1fr) auto auto 26px;gap:14px;align-items:center;padding:12px 16px}
+.ic{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;color:#fff;font-size:18px;font-weight:800;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:inset 0 1px 2px #ffffff55,0 5px 12px #0006}
+.nm{font-size:14.5px;font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt{margin-top:3px;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mt .stale{color:var(--amber)}
+.szcol{text-align:right}.sznum{font-size:14px;font-weight:650;font-variant-numeric:tabular-nums;color:#E0E9E1}.szsub{font-size:10.5px;color:var(--faint);margin-top:2px}
+.cap{font-size:11px;padding:4px 10px;border-radius:999px;font-weight:600}
+.cap.live{background:rgba(142,216,179,.14);color:var(--mint)}
+.cap.mid{background:rgba(233,200,122,.13);color:var(--amber)}
+.cap.old{background:rgba(169,188,174,.12);color:var(--muted)}
+.chk{width:22px;height:22px;border:1.5px solid #6b8071;border-radius:7px;background:#1C2821;display:grid;place-items:center;color:#0f2418;padding:0;font-size:13px;font-weight:800}
+.chk.on{background:var(--mint);border-color:var(--mint)}
+.fold{display:flex;align-items:center;justify-content:space-between;margin:-2px 14px 9px 74px;padding:8px 12px;border-radius:10px;background:#1F2C25;font-size:12px}
+.fold .am{color:#C9DACD}.fold .am b{color:var(--mint);font-variant-numeric:tabular-nums}
+.fold .chg{color:var(--faint);font-size:11px}
+.fold button{border:0;background:none;color:var(--mint);font-size:12px;font-weight:650}
+.files{margin:2px 14px 14px;padding:4px 8px;border-top:1px solid #3A5543}
+.fh{display:flex;justify-content:space-between;margin:10px 4px 6px;font-size:12.5px;font-weight:700}
+.fh span:last-child{color:var(--faint);font-size:11px;font-weight:500}
+.file{display:grid;grid-template-columns:17px 100px minmax(60px,1fr) 74px 34px;gap:12px;align-items:center;min-height:31px;padding:3px 2px;font-size:11.5px}
+.file .chk{width:16px;height:16px;border-radius:5px;font-size:10px}
+.file .lab{color:#D8E5DA;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file .path{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#9FB3A6;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file .fsz{text-align:right;color:#C9DACD;font-variant-numeric:tabular-nums}
+.fmini{display:flex;justify-content:flex-end;gap:2px}.fmini svg{width:14px;height:14px;stroke:#8fae9c;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.fnote{margin:6px 0 0 30px;color:var(--faint);font-size:11px}
+.footer{flex:none;display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:72px;padding:14px 26px;background:linear-gradient(180deg,#202C27,#1D2722);border-top:1px solid var(--line)}
+.sel{display:flex;align-items:center;gap:12px;font-size:13px;color:#D6E3D8}
+.sel .cnt{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;color:#F0F8F1}
+.sel .unit{color:var(--faint);font-size:11px}
+.sel .amt{color:var(--faint)}.sel .amt b{color:var(--mint);font-variant-numeric:tabular-nums;font-size:15px}
+.act{display:flex;align-items:center;gap:12px}
+.clear{border:0;background:none;color:var(--mint);font-size:12px}
+.remove{min-width:180px;height:46px;padding:0 26px;border:0;border-radius:13px;background:var(--mint);color:#14351F;font-size:14px;font-weight:700;box-shadow:0 8px 22px rgba(142,216,179,.18)}
+.remove:disabled{background:#2C3A31;color:#6F8274;box-shadow:none}
+.modal-back{position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:#0b120fd9;backdrop-filter:blur(3px)}
+.modal{width:470px;padding:26px;border:1px solid #4A6B57;border-radius:16px;background:var(--panel);box-shadow:0 30px 90px #000}
+.modal h3{margin:0 0 10px;font-size:20px}
+.modal p{margin:8px 0;color:var(--muted);font-size:13px;line-height:1.7}
+.modal ul{margin:10px 0 0;padding:0;list-style:none;max-height:150px;overflow:auto}
+.modal li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed #3a4d3f;color:#DEE9DF;font-size:12.5px}
+.modal li span:last-child{color:var(--faint);font-variant-numeric:tabular-nums}
+.fine{margin-top:14px;padding:8px 10px;border-radius:8px;background:#2E2A1E;color:var(--amber);font-size:11.5px}
+.modal-act{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.modal-act button{border:1px solid var(--line);border-radius:10px;padding:9px 18px;background:#314238;color:#E7F1E8;font-size:12.5px;font-weight:600}
+.modal-act .danger{border:0;background:var(--danger);color:#2b1410}
+.toast{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);z-index:12;padding:10px 16px;border-radius:10px;background:#d9f0df;color:#153221;font-size:12.5px;box-shadow:0 8px 25px #0008}
+</style></head>
+<body><div class="stage"><div class="win">
+<div class="tbar">
+  <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+  <div class="logo"></div>
+  <span class="appname">v5xs <b>软件卸载</b></span><span class="sub">软件卸载窗口</span>
+  <div class="sp"></div>
+  <div class="cur">已连接电源 · 外设配对本机</div>
+</div>
+<div class="hero">
+  <div class="metric"><span class="ml">本次将释放</span><span class="mv" id="mv">0.0</span><span class="mu">GB</span><span class="md" id="md">未选择</span></div>
+  <div class="sp2"></div>
+  <div class="tags"><span class="tag gray">已安装 9 个应用</span><span class="tag mint" id="ta">已选 0 个</span><span class="tag amber">演示 · 不删除</span></div>
+</div>
+<div class="toolbar">
+  <div class="segs"><button class="on">卸载</button><button>更新</button><button>启动项</button></div>
+  <div class="toolrow">
+    <div class="sorts"><button>名称</button><button class="on">最近使用</button><button>占用体积</button><button>安装时间</button></div>
+    <div class="sep"></div>
+    <label class="search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="M15 15 21 21"/></svg><input placeholder="搜索应用"></label>
+    <button class="refresh">&#8635;</button>
+  </div>
+</div>
+<div class="countline"><span>已安装 <b>9</b> 个应用 · 占用 <b>4.96 GB</b></span><span>关联文件 <b>47</b> 项</span><span class="demo">演示数据 · 不会实际删除</span></div>
+<div class="list" id="list"></div>
+<div class="footer"><div class="sel" id="sel"></div><div class="act"><button class="clear" id="clear" hidden>取消选择</button><button class="remove" id="remove" disabled>移到废纸篓</button></div></div>
+</div></div><div id="modal"></div><div id="toast"></div>
+<script>
+var fmt=function(mb){return mb>=1024?(mb/1024).toFixed(2)+" GB":mb.toFixed(1)+" MB";};
+var apps=[
+{id:"iina",n:"IINA",v:"1.4.1",sz:209.6,st:"6个月前",live:"old",icon:"P",c:["#3b5a81","#122a46"]},
+{id:"cherry",n:"Cherry Studio",v:"2.1.6",sz:1136,st:"4天前打开",live:"mid",icon:"C",c:["#dd8779","#9c5354"]},
+{id:"notes",n:"v5notes",v:"1.0.2",sz:226.5,st:"2天前",live:"mid",icon:"v5",c:["#e9ad65","#a96c40"]},
+{id:"xc",n:"XTerminal",v:"4.3.7",sz:493.4,st:"2天前",live:"mid",icon:"X",c:["#8dc191","#366450"]},
+{id:"api",n:"Apifox",v:"2.8.47",sz:769.4,st:"2天前",live:"mid",icon:"A",c:["#e38b81","#b2525b"]},
+{id:"wps",n:"WPS Office",v:"12.1",sz:1956,st:"活跃中",live:"live",icon:"W",c:["#d28b70","#97544e"]},
+{id:"filee",n:"Filee",v:"1.12.0",sz:249.3,st:"2天前",live:"mid",icon:"F",c:["#a69cca","#5b689c"]},
+{id:"loop",n:"Loop",v:"1.4.2",sz:31.9,st:"活跃中",live:"live",icon:"O",c:["#738bab","#3b506d"]}];
+var fsI=[["App","/Applications/IINA.app","209.6 MB"],["App支持文件","~/Library/Application Support/com.colliderli.iina","26.9 MB"],["WebKit","~/Library/WebKit/com.colliderli.iina","647 KB"],["临时缓存","/private/var/folders/9m/.../C/com.colliderli.iina","205 KB"],["容器","~/Library/Containers/com.colliderli.iina.OpenInIINA","4 KB"],["最近使用",".../ApplicationRecentDocuments/com.colliderli.iina.sfl4","3 KB"],["偏好设置","~/Library/Preferences/com.colliderli.iina.plist","803 B"],["App脚本","~/Library/Application Scripts/com.colliderli.iina.OpenInIINA","0 KB"]];
+function files(a){if(a.id==="iina")return fsI;return [["App","/Applications/"+a.n+".app",fmt(a.sz)],["支持文件","~/Library/Application Support/"+a.id,fmt(a.ex||a.sz*0.05)]];}
+var sel=new Set(),exp=new Set(),pick=new Set();
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function mbv(f){var x=parseFloat(f[2]);if(/GB/.test(f[2]))return x*1024;if(/MB/.test(f[2]))return x;if(/KB/.test(f[2]))return x/1024;return x/1048576;}
+function amt(a){return (pick.has(a.id+":app")?a.sz:0)+files(a).filter(function(f){return pick.has(a.id+":"+f[0]);}).reduce(function(s,f){return s+mbv(f);},0);}
+function chk(o,attr){return '<button '+(attr||"")+' class="chk '+(o?"on":"")+'">'+(o?"OK":"")+"</button>";}
+function render(){
+ document.getElementById("list").innerHTML=apps.map(function(a){
+  var on=sel.has(a.id),open=exp.has(a.id);
+  var aSelf=pick.has(a.id+":app")?a.sz:0;
+  var aFiles=files(a).filter(function(f){return pick.has(a.id+":"+f[0]);}).reduce(function(s,f){return s+mbv(f);},0);
+  var extra=Math.max(0,aSelf+aFiles-a.sz);
+  var detail=open?'<div class="files"><div class="fh"><span>将处理的文件 · '+esc(a.n)+'</span><span>逐项核对后可取消勾选</span></div>'+files(a).map(function(f){
+    var k=a.id+":"+f[0],onp=pick.has(k);
+    return '<div class="file">'+chk(onp,'data-pick="'+esc(k)+'"')+'<span class="lab">'+esc(f[0])+'</span><span class="path">'+esc(f[1])+'</span><span class="fsz">'+esc(f[2])+'</span><span class="fmini"><svg viewBox="0 0 24 24"><path d="M6 16V6a2 2 0 0 1 2-2h8"/><rect x="8" y="8" width="11" height="12" rx="2"/></svg></span></div>';}).join('')+'<div class="fnote">只列出与该应用标识完全匹配的文件，共享文件不自动勾选</div></div>':"";
+  return '<div class="card '+(on?"sel":"")+'"><div class="card-top">'+
+   '<div class="ic" style="--c1:'+a.c[0]+';--c2:'+a.c[1]+'">'+esc(a.icon)+'</div>'+
+   '<div><div class="nm">'+esc(a.n)+'</div><div class="mt">v'+a.v+' '+fmt(a.sz)+' <span class="'+(a.live==="old"?"stale":"")+'">'+esc(a.st)+'</span></div></div>'+
+   '<div class="szcol"><div class="sznum">'+fmt(a.sz)+'</div><div class="szsub">占用体积</div></div>'+
+   '<span class="cap '+a.live+'">'+(a.live==="live"?"活跃中":esc(a.st))+'</span>'+
+   chk(on,'data-app="'+(a.id)+'"')+'</div>'+
+   (on?'<div class="fold"><span class="am">已选 · 预计 <b>'+fmt(aSelf+aFiles)+'</b>'+(extra>0.005?' <span class="chg">+'+fmt(extra)+'</span>':"")+'</span><button data-toggle="'+a.id+'">'+((open)?"收起 ↑":"查看关联文件 ↓")+'</button></div>':"")+detail+'</div>';
+ }).join('');
+ var chosen=apps.filter(function(a){return sel.has(a.id);});
+ var gb=chosen.reduce(function(s,a){return s+amt(a);},0);
+ $("mv").textContent=gb>=1024?(gb/1024).toFixed(2):gb.toFixed(1);
+ $("md").textContent=chosen.length?(chosen.length+" 个应用 · "+fmt(gb)):"未选择";
+ $("ta").textContent="已选 "+chosen.length+" 个";
+ $("sel").innerHTML=chosen.length?'<span class="cnt">'+chosen.length+'</span><span class="unit">个应用</span><span class="amt">预计 <b>'+fmt(gb)+'</b></span>':'<span style="color:#84988a">未选择应用 · 勾选后可展开关联文件，一次移除多个</span>';
+ $("remove").disabled=!chosen.length;$("remove").textContent=chosen.length?("移到废纸篓 · "+chosen.length+" 项"):"移到废纸篓";$("clear").hidden=!chosen.length;
+}
+function pickAll(a){files(a).forEach(function(f){pick.add(a.id+":"+f[0]);});if(a.id!=="iina")pick.add(a.id+":app");}
+document.getElementById("list").addEventListener("click",function(e){
+ var app=e.target.closest("[data-app]"),tg=e.target.closest("[data-toggle]"),pk=e.target.closest("[data-pick]");
+ if(app){var a=apps.find(function(x){return x.id===app.dataset.app;});if(!a)return;if(sel.has(a.id)){sel.delete(a.id);exp.delete(a.id);}else{sel.add(a.id);pickAll(a);}render();return;}
+ if(tg){var id=tg.dataset.toggle;if(exp.has(id))exp.delete(id);else exp.add(id);render();return;}
+ if(pk){var k=pk.dataset.pick;if(pick.has(k))pick.delete(k);else pick.add(k);render();}
+});
+$("clear").addEventListener("click",function(){sel.clear();exp.clear();render();});
+$("remove").addEventListener("click",function(){var c=apps.filter(function(a){return sel.has(a.id);});
+ $("modal").innerHTML='<div class="modal-back"><div class="modal"><h3>确认移入废纸篓？</h3><p>将处理 '+c.length+' 个应用及其关联文件。运行中的应用需先退出，权限不足的文件会逐项报告。</p><ul>'+c.map(function(a){return '<li><span>'+esc(a.n)+'</span><span>'+fmt(amt(a))+'</span></li>';}).join("")+'</ul><p class="fine">演示原型 · 不会移动或删除真实文件</p><div class="modal-act"><button id="cm">返回核对</button><button class="danger" id="cf">移到废纸篓（演示）</button></div></div></div>';
+ $("cm").onclick=function(){$("modal").innerHTML="";};$("cf").onclick=function(){$("modal").innerHTML="";var t=document.getElementById("toast");t.innerHTML='<div class="toast">演示完成 · 实际会把所选文件移到废纸篓</div>';setTimeout(function(){t.innerHTML="";},2400);};});
+render();
+</script>
+</body></html>

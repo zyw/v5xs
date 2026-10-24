@@ -2,12 +2,20 @@ import AppKit
 import CoreServices
 import SwiftUI
 
-private enum UninstallStyle {
-    static let background = Color(red: 0.12, green: 0.16, blue: 0.15)
-    static let card = Color(red: 0.17, green: 0.22, blue: 0.19)
-    static let selected = Color(red: 0.20, green: 0.30, blue: 0.24)
-    static let mint = Color(red: 0.57, green: 0.86, blue: 0.72)
-    static let muted = Color(red: 0.64, green: 0.71, blue: 0.67)
+enum UninstallStyle {
+    static let background = Color(red: 0.118, green: 0.157, blue: 0.141)
+    static let card = Color(red: 0.150, green: 0.200, blue: 0.173)
+    static let cardHi = Color(red: 0.169, green: 0.227, blue: 0.188)
+    static let line = Color(red: 0.220, green: 0.290, blue: 0.243)
+    static let selected = Color(red: 0.169, green: 0.231, blue: 0.184)
+    static let ink = Color(red: 0.929, green: 0.957, blue: 0.933)
+    static let mint = Color(red: 0.557, green: 0.847, blue: 0.702)
+    static let mintDeep = Color(red: 0.239, green: 0.420, blue: 0.322)
+    static let teal = Color(red: 0.247, green: 0.663, blue: 0.627)
+    static let amber = Color(red: 0.914, green: 0.784, blue: 0.478)
+    static let muted = Color(red: 0.663, green: 0.737, blue: 0.682)
+    static let faint = Color(red: 0.486, green: 0.565, blue: 0.510)
+    static let danger = Color(red: 0.910, green: 0.604, blue: 0.541)
 }
 
 private struct UninstallFile: Identifiable, Sendable, Codable {
@@ -427,11 +435,29 @@ private final class UninstallerModel: ObservableObject {
     }
 }
 
+
+enum UninstallerTab: String, CaseIterable {
+    case uninstall
+    case startup
+
+    var title: String {
+        switch self {
+        case .uninstall: return "卸载"
+        case .startup: return "启动项"
+        }
+    }
+}
+
 struct UninstallerPanel: View {
     @StateObject private var model = UninstallerModel()
     @State private var query = ""
     @State private var sort: AppSort = .used
     @State private var ascending = true
+    @State private var activeTab: UninstallerTab = .uninstall
+    @FocusState private var searchFocused: Bool
+    @State private var refreshTurns = 0
+    @State private var refreshSucceeded = false
+    @State private var refreshSpinning = false
 
     private var displayed: [InstalledApp] {
         model.apps.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
@@ -467,73 +493,74 @@ struct UninstallerPanel: View {
         lhs < rhs ? .orderedAscending : (lhs > rhs ? .orderedDescending : .orderedSame)
     }
 
+    private var chosenBytes: Int64 {
+        model.apps.flatMap(\.files).filter { model.chosenFiles.contains($0.url) }.reduce(0) { $0 + $1.bytes }
+    }
+
     var body: some View {
         VStack(spacing: 0) {
-            HStack(alignment: .bottom) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("软件卸载").font(.system(size: 26, weight: .bold))
-                    Text("选择应用，核对关联文件，然后移到废纸篓")
-                        .font(.system(size: 12)).foregroundStyle(UninstallStyle.muted)
-                }
-                Spacer()
-                Button { model.refresh() } label: { Image(systemName: "arrow.clockwise") }
-                    .disabled(model.loading).help("重新扫描")
-                TextField("搜索应用名称", text: $query)
-                    .textFieldStyle(.roundedBorder).frame(width: 190)
-            }
-            .padding(22)
-            HStack {
-                Text("已安装 App \(model.apps.count) 个 · \(formatBytes(model.apps.reduce(0) { $0 + $1.bytes }))")
-                if model.loading { ProgressView().controlSize(.small) }
-                Spacer()
-                ForEach(AppSort.allCases, id: \.self) { option in
-                    Button {
-                        if sort == option { ascending.toggle() }
-                        else {
-                            sort = option
-                            ascending = option != .size
-                        }
-                    } label: {
-                        Text(option.rawValue + (sort == option ? (ascending ? " ↑" : " ↓") : ""))
-                            .foregroundStyle(sort == option ? UninstallStyle.mint : UninstallStyle.muted)
-                    }
-                    .buttonStyle(.plain).padding(.leading, 14)
+            tabBar
+            Rectangle().fill(UninstallStyle.line).frame(height: 1)
+            Group {
+                switch activeTab {
+                case .uninstall:
+                    uninstallContent
+                case .startup:
+                    StartupItemsPanel()
                 }
             }
-            .font(.system(size: 11, weight: .semibold))
-            .padding(.horizontal, 22).padding(.bottom, 12)
-            Divider()
-            ScrollView {
-                LazyVStack(spacing: 7) {
-                    ForEach(displayed) { app in appRow(app) }
-                    if displayed.isEmpty && !model.loading {
-                        Text("没有找到应用").foregroundStyle(UninstallStyle.muted)
-                            .padding(40)
-                    }
-                }
-                .padding(16)
-            }
-            Divider()
-            HStack {
-                Text("已选择 \(model.selected.count) 个 App · 预计 \(formatBytes(model.apps.filter { model.selected.contains($0.url) }.flatMap(\.files).filter { model.chosenFiles.contains($0.url) }.reduce(0) { $0 + $1.bytes }))")
-                    .foregroundStyle(UninstallStyle.muted)
-                Spacer()
-                Button("取消选择") {
-                    model.selected.removeAll()
-                    model.chosenFiles.removeAll()
-                    model.expanded.removeAll()
-                }.disabled(model.selected.isEmpty)
-                Button("移到废纸篓") { model.trashSelected() }
-                    .disabled(model.chosenFiles.isEmpty)
-                    .buttonStyle(.borderedProminent)
-                    .tint(UninstallStyle.mint)
-            }
-            .font(.system(size: 12)).padding(18)
         }
-        .frame(minWidth: 720, minHeight: 480)
+        .frame(minWidth: 760, minHeight: 560)
         .background(UninstallStyle.background)
-        .foregroundStyle(.white)
+        .foregroundStyle(UninstallStyle.ink)
         .preferredColorScheme(.dark)
+    }
+
+    /// 统一标题栏：logo + 当前页标题 + 分段 tab（卸载 / 启动项），始终可见。
+    private var tabBar: some View {
+        HStack(alignment: .center, spacing: 12) {
+            if let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleIconFile") as? String,
+               let image = NSImage(named: name) {
+                Image(nsImage: image).resizable().frame(width: 26, height: 26)
+                    .clipShape(RoundedRectangle(cornerRadius: 7))
+            }
+            Text("v5xs").font(.system(size: 14, weight: .bold)).foregroundStyle(UninstallStyle.ink)
+            Text(activeTab == .uninstall ? "软件卸载" : "启动项")
+                .font(.system(size: 14, weight: .semibold)).foregroundStyle(UninstallStyle.mint)
+            Spacer()
+            HStack(spacing: 2) {
+                ForEach(UninstallerTab.allCases, id: \.self) { tab in
+                    Button {
+                        activeTab = tab
+                    } label: {
+                        Text(tab.title)
+                            .font(.system(size: 12.5, weight: .semibold))
+                            .foregroundStyle(activeTab == tab ? Color(red: 0.918, green: 0.969, blue: 0.933) : UninstallStyle.muted)
+                            .padding(.horizontal, 18).padding(.vertical, 7)
+                            .background(activeTab == tab ? Color(red: 0.210, green: 0.294, blue: 0.247) : .clear, in: RoundedRectangle(cornerRadius: 9))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(3).background(Color(red: 0.125, green: 0.177, blue: 0.153), in: RoundedRectangle(cornerRadius: 12))
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(UninstallStyle.line, lineWidth: 1))
+            Spacer()
+        }
+        .padding(.horizontal, 20).padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(LinearGradient(colors: [Color(red: 0.141, green: 0.200, blue: 0.169), Color(red: 0.125, green: 0.169, blue: 0.149)], startPoint: .top, endPoint: .bottom))
+    }
+
+    /// 卸载 tab 的完整内容
+    private var uninstallContent: some View {
+        VStack(spacing: 0) {
+            metricBar
+            countLine
+            Divider().overlay(UninstallStyle.line)
+            list
+            Divider().overlay(UninstallStyle.line)
+            footer
+        }
         .onAppear { if model.apps.isEmpty { model.load() } }
         .alert("部分文件未能移动", isPresented: Binding(
             get: { model.error != nil },
@@ -543,90 +570,382 @@ struct UninstallerPanel: View {
         } message: { Text(model.error ?? "") }
     }
 
-    private func appRow(_ app: InstalledApp) -> some View {
-        let isSelected = model.selected.contains(app.url)
-        return VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 13) {
-                Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
-                    .resizable().frame(width: 38, height: 38)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(app.name).font(.system(size: 13, weight: .semibold))
-                    Text("v\(app.version) · \(app.url.path)")
-                        .font(.system(size: 10)).foregroundStyle(UninstallStyle.muted)
-                        .lineLimit(1).truncationMode(.middle)
-                }
-                Spacer(minLength: 8)
-                Text(formatBytes(app.bytes)).frame(width: 85, alignment: .trailing)
-                Text(dateText(app.lastUsed)).frame(width: 90, alignment: .trailing)
-                Text(dateText(app.installed)).frame(width: 90, alignment: .trailing)
-                Toggle("选择 \(app.name)", isOn: Binding(
-                    get: { model.selected.contains(app.url) },
-                    set: { _ in model.toggle(app) }
-                ))
-                .labelsHidden().frame(width: 34)
+    // MARK: - 标题栏
+    private var header: some View {
+        HStack(alignment: .center, spacing: 12) {
+            if let name = Bundle.main.object(forInfoDictionaryKey: "CFBundleIconFile") as? String,
+               let image = NSImage(named: name) {
+                Image(nsImage: image).resizable().frame(width: 26, height: 26)
+                    .clipShape(RoundedRectangle(cornerRadius: 7))
             }
-            .font(.system(size: 11))
-            .padding(12)
-            if isSelected {
-                HStack {
-                    Text("预计处理 \(formatBytes(app.files.filter { model.chosenFiles.contains($0.url) }.reduce(0) { $0 + $1.bytes }))")
-                        .foregroundStyle(UninstallStyle.muted)
-                    Spacer()
-                    Button(model.expanded.contains(app.url) ? "收起文件 ↑" : "查看关联文件 ↓") {
-                        if !model.expanded.insert(app.url).inserted { model.expanded.remove(app.url) }
-                    }
-                    .buttonStyle(.plain).font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(UninstallStyle.mint)
+            Text("v5xs").font(.system(size: 14, weight: .bold)).foregroundStyle(UninstallStyle.ink)
+            Text(activeTab == .uninstall ? "软件卸载" : "启动项").font(.system(size: 14, weight: .semibold)).foregroundStyle(UninstallStyle.mint)
+            Text(activeTab == .uninstall ? "软件卸载窗口" : "开机自启管理").font(.system(size: 11)).foregroundStyle(UninstallStyle.faint)
+            Spacer()
+        }
+        .padding(.horizontal, 20).padding(.vertical, 12)
+        .frame(maxWidth: .infinity)
+        .background(LinearGradient(colors: [Color(red: 0.141, green: 0.200, blue: 0.169), Color(red: 0.125, green: 0.169, blue: 0.149)],
+                                   startPoint: .top, endPoint: .bottom))
+        .overlay(alignment: .bottom) { Rectangle().fill(UninstallStyle.line).frame(height: 1) }
+    }
+
+    // MARK: - 释放仪表 + 搜索刷新
+    private var metricBar: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text("本次将释放").font(.system(size: 11)).foregroundStyle(UninstallStyle.faint)
+                HStack(alignment: .firstTextBaseline, spacing: 8) {
+                    Text(gaugeText).font(.system(size: 40, weight: .heavy, design: .rounded))
+                        .foregroundStyle(LinearGradient(colors: [UninstallStyle.mint, UninstallStyle.teal], startPoint: .leading, endPoint: .trailing))
+                    Text("GB").font(.system(size: 14, weight: .semibold)).foregroundStyle(UninstallStyle.muted)
                 }
-                .font(.system(size: 11))
-                .padding(.leading, 62).padding(.trailing, 16).padding(.bottom, 10)
-                if model.expanded.contains(app.url) {
-                    Divider().padding(.horizontal, 14)
-                    ForEach(app.files) { file in
-                        HStack(spacing: 10) {
-                            Toggle(file.label, isOn: Binding(
-                                get: { model.chosenFiles.contains(file.url) },
-                                set: { chosen in
-                                    if chosen { model.chosenFiles.insert(file.url) }
-                                    else { model.chosenFiles.remove(file.url) }
-                                }
-                            ))
-                            .frame(width: 115, alignment: .leading)
-                            Text(file.url.path.replacingOccurrences(
-                                of: FileManager.default.homeDirectoryForCurrentUser.path,
-                                with: "~"
-                            ))
-                            .lineLimit(1).truncationMode(.middle)
-                            .textSelection(.enabled)
-                            Spacer(minLength: 4)
-                            Text(formatBytes(file.bytes))
-                            Button {
-                                NSPasteboard.general.clearContents()
-                                NSPasteboard.general.setString(file.url.path, forType: .string)
-                            } label: { Image(systemName: "doc.on.doc") }
-                            .buttonStyle(.plain).help("复制路径")
-                            Button {
-                                NSWorkspace.shared.activateFileViewerSelecting([file.url])
-                            } label: { Image(systemName: "folder") }
-                            .buttonStyle(.plain).help("在访达中显示")
-                        }
-                        .font(.system(size: 11)).foregroundStyle(UninstallStyle.muted)
-                        .padding(.horizontal, 20).padding(.vertical, 4)
+            }
+            Text(gaugeBadge)
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(Color(red: 0.106, green: 0.23, blue: 0.165))
+                .padding(.horizontal, 12).padding(.vertical, 6)
+                .background(UninstallStyle.mint, in: Capsule())
+                .padding(.top, 20)
+            Spacer()
+            searchField
+            refreshButton
+        }
+        .padding(.horizontal, 24).padding(.top, 14).padding(.bottom, 8)
+    }
+
+    private var gaugeBytes: Int64 {
+        model.apps.filter { model.selected.contains($0.url) }
+            .flatMap { app in files(of: app) }.filter { model.chosenFiles.contains($0.url) }.reduce(0) { $0 + $1.bytes }
+    }
+
+    private var gaugeText: String {
+        let bytes = Double(gaugeBytes)
+        return String(format: "%.1f", bytes >= 1_073_741_824 ? bytes / 1_073_741_824 : bytes / 1_048_576)
+    }
+
+    private var gaugeBadge: String {
+        let bytes = gaugeBytes
+        if bytes == 0 { return "未选择" }
+        return "\(model.selected.count) 个应用 · \(formatBytes(bytes))"
+    }
+
+    /// 搜索框：加宽到 280，内部输入区填满，聚焦描边高亮，有内容时可一键清除。
+    private var searchField: some View {
+        HStack(spacing: 7) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(searchFocused ? UninstallStyle.mint : UninstallStyle.faint)
+            TextField("搜索应用名称", text: $query)
+                .textFieldStyle(.plain)
+                .font(.system(size: 12.5))
+                .foregroundStyle(UninstallStyle.ink)
+                .focused($searchFocused)
+                .frame(maxWidth: .infinity)
+            if !query.isEmpty {
+                Button {
+                    query = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(UninstallStyle.faint)
+                }
+                .buttonStyle(.plain)
+                .help("清除搜索")
+                .transition(.opacity)
+            }
+        }
+        .padding(.horizontal, 11).padding(.vertical, 7)
+        .frame(width: 280)
+        .background(Color(red: 0.133, green: 0.192, blue: 0.161), in: RoundedRectangle(cornerRadius: 9))
+        .overlay(
+            RoundedRectangle(cornerRadius: 9)
+                .stroke(searchFocused ? UninstallStyle.mint.opacity(0.75) : UninstallStyle.line, lineWidth: 1)
+        )
+        .animation(.easeOut(duration: 0.15), value: searchFocused)
+        .animation(.easeOut(duration: 0.12), value: query.isEmpty)
+    }
+
+    /// 刷新按钮：点击立即旋转，扫描期间持续转动，完成后短暂显示勾选。
+    private var refreshButton: some View {
+        Button {
+            refreshTurns += 2
+            model.refresh()
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(UninstallStyle.card)
+                RoundedRectangle(cornerRadius: 9)
+                    .stroke(model.loading ? UninstallStyle.mint.opacity(0.6) : UninstallStyle.line, lineWidth: 1)
+                if refreshSucceeded {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(UninstallStyle.mint)
+                        .transition(.scale.combined(with: .opacity))
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(model.loading ? UninstallStyle.mint : UninstallStyle.faint)
+                        .rotationEffect(.degrees(refreshSpinning ? 360 : 0))
+                        .animation(model.loading ? .linear(duration: 0.8).repeatForever(autoreverses: false) : .default, value: refreshSpinning)
+                }
+            }
+            .frame(width: 32, height: 32)
+            .contentShape(RoundedRectangle(cornerRadius: 9))
+        }
+        .buttonStyle(.plain)
+        .disabled(model.loading)
+        .animation(.easeInOut(duration: 0.45), value: refreshTurns)
+        .animation(.easeInOut(duration: 0.25), value: refreshSucceeded)
+        .onChange(of: model.loading) { _, loading in
+            if loading {
+                refreshSucceeded = false
+                withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
+                    refreshSpinning = true
+                }
+            } else {
+                refreshSpinning = false
+                if refreshTurns > 0 {
+                    refreshSucceeded = true
+                    Task {
+                        try? await Task.sleep(nanoseconds: 1_400_000_000)
+                        refreshSucceeded = false
                     }
-                    Text("只列出与此应用标识完全匹配的文件；共享文件不会自动选择。")
-                        .font(.system(size: 10)).foregroundStyle(UninstallStyle.muted)
-                        .padding(.leading, 20).padding(.bottom, 10)
                 }
             }
         }
-        .background(isSelected ? UninstallStyle.selected : UninstallStyle.card,
-                    in: RoundedRectangle(cornerRadius: 12))
+        .help(model.loading ? "正在扫描…" : "重新扫描已安装应用")
     }
 
-    private func dateText(_ date: Date?) -> String {
-        guard let date else { return "未知" }
-        return date.formatted(date: .numeric, time: .omitted)
+    // MARK: - 统计行 + 排序
+    private var countLine: some View {
+        HStack(spacing: 14) {
+            Text("已安装 \(model.apps.count) 个应用 · 占用 \(formatBytes(model.apps.reduce(0) { $0 + $1.bytes }))")
+                .font(.system(size: 12)).foregroundStyle(UninstallStyle.muted)
+            Spacer()
+            Text("关联文件 \(model.apps.flatMap(\.files).count) 项")
+                .font(.system(size: 12)).foregroundStyle(UninstallStyle.muted)
+            Rectangle().fill(UninstallStyle.line).frame(width: 1, height: 16)
+            sortButtons
+        }
+        .padding(.horizontal, 26).padding(.vertical, 8)
     }
+
+    /// 排序按钮组：名称 / 占用体积 / 最近使用 / 安装时间。
+    private var sortButtons: some View {
+        HStack(spacing: 2) {
+            ForEach(AppSort.allCases, id: \.self) { option in
+                Button {
+                    if sort == option { ascending.toggle() } else { sort = option; ascending = option != .size }
+                } label: {
+                    VStack(spacing: 1) {
+                        Text(option.rawValue + (sort == option ? (ascending ? " ↑" : " ↓") : ""))
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(sort == option ? UninstallStyle.mint : UninstallStyle.faint)
+                        Rectangle().fill(sort == option ? UninstallStyle.mint : .clear).frame(width: 16, height: 2)
+                    }
+                }
+                .buttonStyle(.plain).padding(.horizontal, 7).padding(.vertical, 2)
+            }
+        }
+    }
+
+    // MARK: - 列表
+    private var list: some View {
+        ScrollView {
+            LazyVStack(spacing: 8) {
+                ForEach(displayed) { app in appRow(app) }
+                if displayed.isEmpty && !model.loading {
+                    Text("没有找到应用").foregroundStyle(UninstallStyle.muted).padding(40)
+                }
+            }
+            .padding(18)
+        }
+    }
+
+    private func files(of app: InstalledApp) -> [UninstallFile] { app.files }
+
+    private func appRow(_ app: InstalledApp) -> some View {
+        let isSelected = model.selected.contains(app.url)
+        let bg = isSelected
+            ? AnyShapeStyle(LinearGradient(colors: [Color(red: 0.161, green: 0.239, blue: 0.188), Color(red: 0.145, green: 0.204, blue: 0.165)], startPoint: .leading, endPoint: .trailing))
+            : AnyShapeStyle(UninstallStyle.card)
+        let border = isSelected ? Color(red: 0.267, green: 0.435, blue: 0.341) : UninstallStyle.line
+        return VStack(spacing: 0) {
+            HStack(spacing: 14) {
+                appIcon(app)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(app.name).font(.system(size: 14.5, weight: .semibold)).foregroundStyle(UninstallStyle.ink)
+                        .lineLimit(1).truncationMode(.middle)
+                    Text("v\(app.version) · \(formatBytes(app.bytes)) · \(lastUseText(app))")
+                        .font(.system(size: 11.5)).foregroundStyle(UninstallStyle.muted).lineLimit(1)
+                }
+                Spacer(minLength: 8)
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text(formatBytes(app.bytes)).font(.system(size: 14, weight: .semibold)).foregroundStyle(Color(red: 0.878, green: 0.914, blue: 0.882))
+                    Text("占用体积").font(.system(size: 10)).foregroundStyle(UninstallStyle.faint)
+                }
+                .frame(minWidth: 84)
+                statusCap(app).frame(minWidth: 66)
+                selectButton(app, isOn: isSelected)
+            }
+            .padding(.horizontal, 16).padding(.vertical, 12)
+
+            if isSelected {
+                foldBar(app)
+                if model.expanded.contains(app.url) { fileList(app) }
+            }
+        }
+        .background(bg, in: RoundedRectangle(cornerRadius: 14))
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(border, lineWidth: 1))
+    }
+
+    private func appIcon(_ app: InstalledApp) -> some View {
+        Image(nsImage: NSWorkspace.shared.icon(forFile: app.url.path))
+            .resizable().frame(width: 40, height: 40)
+            .clipShape(RoundedRectangle(cornerRadius: 11))
+            .shadow(color: .black.opacity(0.3), radius: 5, y: 2)
+    }
+
+    private func lastUseText(_ app: InstalledApp) -> String {
+        if let d = app.lastUsed {
+            if Date().timeIntervalSince(d) < 7 * 86_400 { return relative(d) }
+        }
+        return app.lastUsed.map(relative) ?? "未知"
+    }
+
+    private func relative(_ date: Date) -> String {
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        formatter.unitsStyle = .short
+        return formatter.localizedString(for: date, relativeTo: Date())
+    }
+
+    private func statusCap(_ app: InstalledApp) -> some View {
+        let active = app.lastUsed.map { Date().timeIntervalSince($0) < 7 * 86_400 } ?? true
+        let text = active ? "活跃中" : lastUseText(app)
+        return Text(text).font(.system(size: 11, weight: .semibold))
+            .foregroundStyle(active ? UninstallStyle.mint : UninstallStyle.muted)
+            .padding(.horizontal, 10).padding(.vertical, 4)
+            .background((active ? UninstallStyle.mint : UninstallStyle.muted).opacity(active ? 0.14 : 0.12), in: Capsule())
+    }
+
+    private func selectButton(_ app: InstalledApp, isOn: Bool) -> some View {
+        Button {
+            model.toggle(app)
+        } label: {
+            Image(systemName: isOn ? "checkmark" : "")
+                .font(.system(size: 13, weight: .heavy))
+                .foregroundStyle(Color(red: 0.059, green: 0.141, blue: 0.094))
+                .frame(width: 20, height: 20)
+                .background(isOn ? UninstallStyle.mint : Color(red: 0.110, green: 0.157, blue: 0.129), in: RoundedRectangle(cornerRadius: 6))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(isOn ? UninstallStyle.mint : Color(red: 0.42, green: 0.50, blue: 0.44), lineWidth: 1.5))
+        }
+        .buttonStyle(.plain).help(isOn ? "取消选择" : "选择应用")
+    }
+
+    private func foldBar(_ app: InstalledApp) -> some View {
+        let chosen = app.files.filter { model.chosenFiles.contains($0.url) }.reduce(0) { $0 + $1.bytes }
+        let isExpanded = model.expanded.contains(app.url)
+        return HStack {
+            Text("已选 · 预计 \(formatBytes(chosen))")
+                .font(.system(size: 12)).foregroundStyle(Color(red: 0.788, green: 0.855, blue: 0.804))
+            Spacer()
+            Button(isExpanded ? "收起文件 ↑" : "查看关联文件 ↓") {
+                if !model.expanded.insert(app.url).inserted { model.expanded.remove(app.url) }
+            }
+            .buttonStyle(.plain).font(.system(size: 12, weight: .semibold)).foregroundStyle(UninstallStyle.mint)
+        }
+        .padding(.horizontal, 14).padding(.vertical, 8)
+        .background(Color(red: 0.122, green: 0.173, blue: 0.145), in: RoundedRectangle(cornerRadius: 9))
+        .padding(.leading, 66).padding(.trailing, 12).padding(.bottom, 8)
+    }
+
+    private func fileList(_ app: InstalledApp) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("将处理的文件 · \(app.name)").font(.system(size: 12.5, weight: .bold)).foregroundStyle(UninstallStyle.ink)
+                Spacer()
+                Text("逐项核对后可取消勾选").font(.system(size: 11)).foregroundStyle(UninstallStyle.faint)
+            }
+            .padding(.horizontal, 16).padding(.top, 10).padding(.bottom, 4)
+            ForEach(app.files) { file in fileRow(file, app: app) }
+            Text("只列出与该应用标识完全匹配的文件；共享文件不会自动选择。")
+                .font(.system(size: 11)).foregroundStyle(UninstallStyle.faint)
+                .padding(.leading, 34).padding(.bottom, 8)
+        }
+        .padding(.bottom, 10)
+    }
+
+    private func fileRow(_ file: UninstallFile, app: InstalledApp) -> some View {
+        let on = model.chosenFiles.contains(file.url)
+        return HStack(spacing: 10) {
+            Button {
+                if on { model.chosenFiles.remove(file.url) } else { model.chosenFiles.insert(file.url) }
+            } label: {
+                Image(systemName: on ? "checkmark" : "")
+                    .font(.system(size: 10, weight: .heavy)).foregroundStyle(Color(red: 0.059, green: 0.141, blue: 0.094))
+                    .frame(width: 16, height: 16)
+                    .background(on ? UninstallStyle.mint : Color(red: 0.110, green: 0.157, blue: 0.129), in: RoundedRectangle(cornerRadius: 5))
+                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(on ? UninstallStyle.mint : Color(red: 0.40, green: 0.48, blue: 0.42), lineWidth: 1.2))
+            }
+            .buttonStyle(.plain)
+            Text(file.label).font(.system(size: 12)).foregroundStyle(Color(red: 0.847, green: 0.898, blue: 0.855)).frame(width: 100, alignment: .leading)
+            Text(shortPath(file.url))
+                .font(.system(size: 11, design: .monospaced)).foregroundStyle(UninstallStyle.muted)
+                .lineLimit(1).truncationMode(.middle).textSelection(.enabled)
+            Spacer()
+            Text(formatBytes(file.bytes)).font(.system(size: 12)).foregroundStyle(Color(red: 0.847, green: 0.898, blue: 0.855)).font(.system(.caption, design: .monospaced))
+            Button { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(file.url.path, forType: .string) } label: {
+                Image(systemName: "doc.on.doc").font(.system(size: 11))
+            }.buttonStyle(.plain).foregroundStyle(UninstallStyle.faint).help("复制路径")
+            Button { NSWorkspace.shared.activateFileViewerSelecting([file.url]) } label: {
+                Image(systemName: "folder").font(.system(size: 11))
+            }.buttonStyle(.plain).foregroundStyle(UninstallStyle.faint).help("在访达中显示")
+        }
+        .padding(.horizontal, 26).padding(.vertical, 3)
+    }
+
+    private func shortPath(_ url: URL) -> String {
+        url.path.replacingOccurrences(of: FileManager.default.homeDirectoryForCurrentUser.path, with: "~")
+    }
+
+    // MARK: - 底部
+    private var footer: some View {
+        HStack {
+            if model.selected.isEmpty {
+                Text("未选择应用 · 勾选后可展开关联文件，一次移除多个")
+                    .font(.system(size: 12.5)).foregroundStyle(Color(red: 0.52, green: 0.596, blue: 0.541))
+            } else {
+                Text("\(model.selected.count)").font(.system(size: 24, weight: .bold, design: .rounded)).foregroundStyle(Color(red: 0.941, green: 0.973, blue: 0.945))
+                Text("个应用").font(.system(size: 12)).foregroundStyle(UninstallStyle.faint)
+                Text("预计 \(formatBytes(chosenBytes))").font(.system(size: 13)).foregroundStyle(UninstallStyle.faint)
+            }
+            Spacer()
+            if !model.selected.isEmpty {
+                Button("取消选择") {
+                    model.selected.removeAll(); model.chosenFiles.removeAll(); model.expanded.removeAll()
+                }
+                .buttonStyle(.plain).font(.system(size: 12)).foregroundStyle(UninstallStyle.mint)
+            }
+            Button {
+                model.trashSelected()
+            } label: {
+                Text(model.selected.isEmpty ? "移到废纸篓" : "移到废纸篓 · \(model.selected.count) 项")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundStyle(Color(red: 0.078, green: 0.208, blue: 0.122))
+                    .padding(.horizontal, 26).padding(.vertical, 12)
+                    .background(UninstallStyle.mint, in: RoundedRectangle(cornerRadius: 13))
+            }
+            .buttonStyle(.plain).disabled(model.selected.isEmpty)
+            .opacity(model.selected.isEmpty ? 0.35 : 1)
+            .shadow(color: UninstallStyle.mint.opacity(0.18), radius: 12, y: 4)
+        }
+        .padding(.horizontal, 26).padding(.vertical, 14)
+        .frame(maxWidth: .infinity)
+        .background(LinearGradient(colors: [Color(red: 0.125, green: 0.173, blue: 0.145), Color(red: 0.114, green: 0.153, blue: 0.133)], startPoint: .top, endPoint: .bottom))
+    }
+
 
     private func formatBytes(_ bytes: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)

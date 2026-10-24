@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>启动项 方向C 极简开关</title>
+<style>
+:root{--bg:#1E2824;--panel:#26332C;--panel-hi:#2B3A30;--line:#384A3E;--ink:#EDF4EE;--muted:#A9BCAE;--faint:#7C9082;--mint:#8ED8B3;--mintdeep:#3D6B52;--teal:#3FA9A0;--amber:#E9C87A}
+*{box-sizing:border-box}body{margin:0;min-width:1000px;background:#141b18;color:var(--ink);font-family:"PingFang SC","Hiragino Sans GB",-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.stage{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.win{width:1080px;height:800px;display:flex;flex-direction:column;background:var(--bg);border:1px solid #3b4f42;border-radius:20px;overflow:hidden;box-shadow:0 40px 120px #000a}
+.tbar{display:flex;align-items:center;gap:12px;height:52px;padding:0 20px;flex:none;background:linear-gradient(180deg,#24332B,#202B26);border-bottom:1px solid var(--line)}
+.lights{display:flex;gap:8px;margin-right:6px}.light{width:12px;height:12px;border-radius:50%}.r{background:#e0705f}.y{background:#e2b04a}.g{background:#63c554}.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--mint),var(--teal));display:grid;place-items:center;color:#0d2418;font-weight:900;font-size:16px}.tbar .an{font-size:14px;font-weight:700}.tbar .an b{color:var(--mint)}.tbar .sub{font-size:11px;color:var(--faint)}.tbar .sp{flex:1}
+.seg{display:flex;padding:3px;background:#202D27;border:1px solid var(--line);border-radius:12px}.seg button{border:0;background:transparent;color:var(--muted);padding:8px 24px;border-radius:9px;font-size:13px;font-weight:600}.seg button.on{background:#36503F;color:#EAF7EE;box-shadow:inset 0 0 0 1px #4A6B57}
+.dash{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:20px 28px 12px;flex:none}
+.dstat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.dstat .dl{font-size:11px;color:var(--faint)}.dstat .dv{font-size:30px;font-weight:800;margin-top:6px}.dstat .du{font-size:12px;color:var(--muted)}
+.dstat.mint .dv{color:var(--mint)}.dstat.amber .dv{color:var(--amber)}.dstat.teal .dv{color:var(--teal)}
+.toolrow{display:flex;justify-content:space-between;align-items:center;padding:4px 28px 8px}
+.scount{font-size:12.5px;color:var(--muted)}
+.mini{display:flex;gap:6px}.mini button{border:1px solid var(--line);background:var(--panel);color:var(--faint);padding:6px 10px;border-radius:8px;font-size:11px}.mini button.on{color:var(--mint);border-color:var(--mintdeep)}
+.list{flex:1;overflow:auto;padding:0 28px 14px}
+.row{display:grid;grid-template-columns:34px 20px 1fr auto 60px;gap:12px;align-items:center;padding:13px 14px;background:var(--panel);border:1px solid var(--line);border-radius:12px;margin-bottom:6px;transition:background .12s}
+.row:hover{background:var(--panel-hi)}
+.ic{width:32px;height:32px;border-radius:9px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px;background:linear-gradient(135deg,var(--c1),var(--c2))}
+.nm{font-size:14px;font-weight:650}.to{font-size:11px;color:var(--faint)}
+.tgl{width:42px;height:24px;border-radius:999px;border:0;position:relative;background:#3a4b40;transition:background .15s}.tgl.on{background:var(--mint)}.tgl::after{content:"";position:absolute;top:2.5px;left:2.5px;width:19px;height:19px;border-radius:50%;background:#e9f2ec;box-shadow:0 1px 3px #0006;transition:left .15s}.tgl.on::after{left:20.5px}
+.chip{font-size:10.5px;padding:3px 8px;border-radius:999px;font-weight:600;text-align:center}.chip.u{background:rgba(142,216,179,.14);color:var(--mint)}.chip.s{background:rgba(233,200,122,.14);color:var(--amber)}
+.footer{flex:none;display:flex;align-items:center;justify-content:space-between;min-height:60px;padding:12px 26px;background:linear-gradient(180deg,#202C27,#1D2722);border-top:1px solid var(--line);color:var(--faint);font-size:12px}
+</style></head>
+<body><div class="stage"><div class="win">
+<div class="tbar">
+ <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+ <div class="logo">V</div><span class="an">v5xs <b>启动项</b></span><span class="sub">一键管理自启</span><div class="sp"></div>
+ <div class="seg"><button>卸载</button><button class="on">启动项</button></div>
+</div>
+<div class="dash">
+ <div class="dstat"><div class="dl">自启项</div><div class="dv">10</div><div class="du">总计</div></div>
+ <div class="dstat mint"><div class="dl">已启用</div><div class="dv">7</div><div class="du">随系统启动</div></div>
+ <div class="dstat amber"><div class="dl">需权限</div><div class="dv">3</div><div class="du">系统代理 / 守护</div></div>
+</div>
+<div class="toolrow"><span class="scount">全部自启项 · 可一键关闭不需要的</span><div class="mini"><button class="on">全部</button><button>用户</button><button>系统</button></div></div>
+<div class="list" id="list"></div>
+<div class="footer"><span>极简视图 · 路径已折叠，点图标可展开详情。</span><span>开关为原型演示</span></div>
+</div></div>
+<script>
+var ITEMS=[
+ {n:"PixPin",o:"登录启动",u:"用户",c:["#e9807f","#a94a4d"],on:true},
+ {n:"v5xs",o:"登录启动",u:"用户",c:["#8ED8B3","#3FA9A0"],on:true},
+ {n:"uTools",o:"登录启动",u:"用户",c:["#7a8bc0","#44507e"],on:true},
+ {n:"Clash Verge",o:"登录启动",u:"用户",c:["#e8a87c","#b06b3e"],on:true},
+ {n:"magpie",o:"后台代理",u:"用户",c:["#9a8bc8","#5d4c8c"],on:true},
+ {n:"Loop",o:"登录启动",u:"用户",c:["#738bab","#3b506d"],on:true},
+ {n:"小旺AI截图",o:"后台代理",u:"用户",c:["#e9c87a","#b08a3e"],on:false},
+ {n:"搜狗输入法服务",o:"系统代理",u:"系统",c:["#8dc1b8","#3f7a6e"],on:true},
+ {n:"Docker 网络",o:"守护进程",u:"系统",c:["#6f9ede","#31508e"],on:false},
+ {n:"ClashX 代理 Helper",o:"守护进程",u:"系统",c:["#e8a87c","#b06b3e"],on:false}];
+var $=function(id){return document.getElementById(id);};
+function render(filter){
+ var arr=ITEMS.filter(function(i){return !filter||i.u===filter;});
+ $("list").innerHTML=arr.map(function(i){
+  return '<div class="row"><div class="ic" style="--c1:'+i.c[0]+';--c2:'+i.c[1]+'">'+i.n[0]+'</div>'+
+  '<div class="nm">'+i.n+'</div><div class="to">'+i.o+'</div>'+
+  '<span class="chip '+(i.u==="系统"?"s":"u")+'">'+i.u+'</span>'+
+  '<button class="tgl '+(i.on?"on":"")+'" onclick="this.classList.toggle(\'on\')"></button></div>';
+ }).join("");
+}
+render();
+document.querySelectorAll(".mini button").forEach(function(b,i){b.onclick=function(){
+  document.querySelectorAll(".mini button").forEach(function(x){x.classList.remove("on");});b.classList.add("on");
+  render(i===1?"用户":i===2?"系统":"");};});
+</script>
+</body></html>

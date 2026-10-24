@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>软件卸载 方向B 干净列表核对</title>
+<style>
+:root{--paper:#FBF9F6;--ink:#1D1D1F;--sub:#6E6E73;--faint:#8f8f93;--line:#e6e1d8;--blue:#3478F6;--yellow:#F6C21B;--danger:#d9503f}
+*{box-sizing:border-box}body{margin:0;min-width:1100px;background:#e9e7e1;color:var(--ink);font-family:"Avenir Next","PingFang SC",sans-serif;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}button{cursor:pointer}
+.stage{min-height:100vh;display:grid;place-items:center;padding:30px 20px}
+.win{width:1120px;height:760px;display:flex;flex-direction:column;background:var(--paper);border:1px solid #d8d3c9;border-radius:18px;overflow:hidden;box-shadow:0 34px 110px #0002}
+.titlebar{position:relative;display:flex;align-items:center;height:44px;padding:0 16px;flex:none;background:#f4f1eb;border-bottom:1px solid var(--line)}
+.lights{display:flex;gap:8px}.light{width:12px;height:12px;border-radius:50%}.r{background:#e0705f}.y{background:#e2b04a}.g{background:#63c554}
+.title{position:absolute;inset:0;display:grid;place-items:center;color:#9a9690;font-size:12px;pointer-events:none}
+.topbar{display:flex;align-items:flex-end;gap:18px;padding:26px 34px 14px}
+.greeting{flex:1}
+.eyebrow{font-size:11px;font-weight:600;letter-spacing:.08em;color:var(--sub);text-transform:uppercase}
+h1{margin:6px 0 2px;font-size:30px;font-weight:700;letter-spacing:-.01em}
+.subhead{color:var(--sub);font-size:13px}
+.tools{display:flex;align-items:center;gap:10px}
+.search{display:flex;align-items:center;gap:7px;height:38px;padding:0 13px;background:#f1efe9;border:1px solid var(--line);border-radius:10px;color:var(--sub)}.search input{border:0;outline:0;background:transparent;font-size:13px;width:150px}
+.iconbtn{width:38px;height:38px;border:1px solid var(--line);border-radius:10px;background:#f1efe9;color:var(--sub);font-size:15px}
+.count{display:flex;justify-content:space-between;align-items:center;padding:4px 34px 12px;color:var(--sub);font-size:12.5px}.count b{color:var(--ink);font-weight:600}
+.count .demo{color:#b08a2e;font-size:11.5px}
+.list{flex:1;overflow:auto;padding:0 26px 14px;scrollbar-width:thin}
+.card{margin:0;border-bottom:1px solid var(--line);padding:13px 8px;transition:background .12s}.card:hover{background:#fffdf9}
+.card-top{display:grid;grid-template-columns:40px minmax(0,1fr) auto 26px;gap:14px;align-items:center}
+.ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:#fff;font-size:17px;font-weight:700;background:linear-gradient(135deg,var(--c1),var(--c2));box-shadow:0 2px 6px #0002}
+.nm{font-size:15px;font-weight:650}.mt{margin-top:2px;font-size:12px;color:var(--sub)}
+.rc{display:flex;align-items:center;gap:16px}.sz{font-size:13.5px;font-weight:600;color:#3a3a3c;font-variant-numeric:tabular-nums;min-width:84px;text-align:right}
+.st{font-size:11.5px;padding:3px 9px;border-radius:999px;font-weight:600}.st.live{background:#e6f6ec;color:#2e8b57}.st.mid{background:#fdf3dd;color:#b8860b}.st.old{background:#f0f0f2;color:#8f8f93}
+.chk{width:22px;height:22px;border:1.5px solid #c9c6be;border-radius:7px;background:#fff;display:grid;place-items:center;color:#fff;padding:0;font-size:14px;font-weight:700}.chk.on{background:var(--blue);border-color:var(--blue)}
+.fold{display:flex;align-items:center;justify-content:space-between;margin:10px 0 0 54px;padding:9px 13px;background:#faf8f3;border-radius:10px;font-size:12.5px}.fold .am{color:#4a4a4c}.fold .am b{color:var(--blue);font-variant-numeric:tabular-nums}.fold button{border:0;background:none;color:var(--blue);font-size:12px;font-weight:650}
+.files{margin:10px 0 4px 54px;padding:12px 8px 8px;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 8px 26px #0000000f}
+.fh{display:flex;justify-content:space-between;margin:0 2px 8px;font-size:12.5px;font-weight:700}.fh span:last-child{color:var(--sub);font-weight:500}
+.fl{display:grid;grid-template-columns:18px 96px minmax(60px,1fr) 74px;gap:12px;align-items:center;min-height:31px;padding:3px 2px;font-size:12px;border-top:1px dashed #eee}
+.fl .chk{width:17px;height:17px;border-radius:5px;font-size:11px;border-color:#cfcbc2}.fl .lab{color:#3a3a3c;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.fl .path{font-family:ui-monospace,Menlo,monospace;font-size:11px;color:#8f8f93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.fl .fsz{text-align:right;color:#5a5a5c;font-variant-numeric:tabular-nums}
+.fnote{margin:6px 2px 0;color:var(--faint);font-size:11.5px}
+.footer{flex:none;display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:72px;padding:14px 34px;background:#f4f1eb;border-top:1px solid var(--line)}
+.sel{display:flex;align-items:center;gap:10px;font-size:13px}.sel .cnt{font-weight:700;color:var(--ink)}.sel .amt{color:var(--sub)}.sel .amt b{color:var(--ink);font-variant-numeric:tabular-nums}
+.act{display:flex;align-items:center;gap:12px}.clear{border:0;background:none;color:var(--blue);font-size:12.5px}
+.remove{min-width:160px;height:44px;padding:0 24px;border:0;border-radius:12px;background:var(--ink);color:#fff;font-size:13.5px;font-weight:700}.remove:disabled{background:#cfccc4;color:#fff}
+.modal-back{position:fixed;inset:0;z-index:9;display:grid;place-items:center;background:#000a;backdrop-filter:blur(2px)}.modal{width:460px;padding:26px;border-radius:16px;background:var(--paper);box-shadow:0 30px 90px #00000033}.modal h2{margin:0 0 8px;font-size:19px}.modal p{margin:8px 0;color:var(--sub);font-size:13px;line-height:1.6}.modal ul{margin:10px 0 0;padding:0;list-style:none;max-height:150px;overflow:auto}.modal li{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed var(--line);font-size:12.5px}.modal li span:last-child{color:var(--sub);font-variant-numeric:tabular-nums}.fine{margin-top:14px;padding:8px 10px;border-radius:8px;background:#fdf3dd;color:#9a7326;font-size:11.5px}.modal-act{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}.modal-act button{border:1px solid var(--line);border-radius:10px;padding:9px 18px;background:#fff;color:var(--ink);font-size:12.5px}.modal-act .danger{border:0;background:var(--danger);color:#fff}
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);z-index:12;padding:10px 16px;border-radius:10px;background:#e6f6ec;color:#2e5b41;font-size:12.5px;box-shadow:0 8px 25px #0002}
+</style></head>
+<body><div class="stage"><div class="win">
+<div class="titlebar"><div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div><div class="title">v5xs 软件卸载</div></div>
+<div class="topbar">
+  <div class="greeting"><div class="eyebrow">软件卸载</div><h1>选择要移入废纸篓的应用</h1><div class="subhead">勾选应用，逐项核对关联文件后再处理。</div></div>
+  <div class="tools"><label class="search">S<input placeholder="搜索应用"></label><button class="iconbtn">R</button></div>
+</div>
+<div class="count"><div><b>9</b> 个应用 · 占用 <b>4.96 GB</b></div><div class="demo">演示数据 不会实际删除</div></div>
+<div class="list" id="list"></div>
+<div class="footer"><div class="sel" id="sel"></div><div class="act"><button class="clear" id="clear" hidden>取消选择</button><button class="remove" id="remove" disabled>移到废纸篓</button></div></div>
+</div></div><div id="modal"></div><div id="toast"></div>
+<script>
+var fmt=function(mb){return mb>=1024?(mb/1024).toFixed(2)+" GB":mb.toFixed(1)+" MB";};
+var apps=[
+{id:"iina",n:"IINA",v:"1.4.1",sz:209.6,st:"6个月前",live:"old",icon:"P",c:["#3b5a81","#122a46"]},
+{id:"cherry",n:"Cherry Studio",v:"2.1.6",sz:1136,st:"4天前打开",live:"mid",icon:"C",c:["#dd8779","#9c5354"]},
+{id:"notes",n:"v5notes",v:"1.0.2",sz:226.5,st:"2天前",live:"mid",icon:"v5",c:["#e9ad65","#a96c40"]},
+{id:"xc",n:"XTerminal",v:"4.3.7",sz:493.4,st:"2天前",live:"mid",icon:"X",c:["#8dc191","#366450"]},
+{id:"api",n:"Apifox",v:"2.8.47",sz:769.4,st:"2天前",live:"mid",icon:"A",c:["#e38b81","#b2525b"]},
+{id:"wps",n:"WPS Office",v:"12.1",sz:1956,st:"活跃中",live:"live",icon:"W",c:["#d28b70","#97544e"]},
+{id:"filee",n:"Filee",v:"1.12.0",sz:249.3,st:"2天前",live:"mid",icon:"F",c:["#a69cca","#5b689c"]},
+{id:"loop",n:"Loop",v:"1.4.2",sz:31.9,st:"活跃中",live:"live",icon:"O",c:["#738bab","#3b506d"]}];
+var fsI=[["App","/Applications/IINA.app","209.6 MB"],["App支持文件","~/Library/Application Support/com.colliderli.iina","26.9 MB"],["WebKit","~/Library/WebKit/com.colliderli.iina","647 KB"],["临时缓存","/private/var/folders/9m/.../C/com.colliderli.iina","205 KB"],["容器","~/Library/Containers/com.colliderli.iina.OpenInIINA","4 KB"],["最近使用",".../ApplicationRecentDocuments/com.colliderli.iina.sfl4","3 KB"],["偏好设置","~/Library/Preferences/com.colliderli.iina.plist","803 B"],["App脚本","~/Library/Application Scripts/com.colliderli.iina.OpenInIINA","0 KB"]];
+function files(a){if(a.id==="iina")return fsI;return [["App","/Applications/"+a.n+".app",fmt(a.sz)],["支持文件","~/Library/Application Support/"+a.id,fmt(a.ex||a.sz*0.05)]];}
+var sel=new Set(),exp=new Set(),pick=new Set();
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c];});}
+function mbv(f){var x=parseFloat(f[2]);if(/GB/.test(f[2]))return x*1024;if(/MB/.test(f[2]))return x;if(/KB/.test(f[2]))return x/1024;return x/1048576;}
+function amt(a){return (pick.has(a.id+":app")?a.sz:0)+files(a).filter(function(f){return pick.has(a.id+":"+f[0]);}).reduce(function(s,f){return s+mbv(f);},0);}
+function chk(o,attr){return '<button '+(attr||"")+' class="chk '+(o?"on":"")+'">'+(o?"OK":"")+"</button>";}
+function render(){
+ document.getElementById("list").innerHTML=apps.map(function(a){
+  var on=sel.has(a.id),open=exp.has(a.id);
+  var aSelf=pick.has(a.id+":app")?a.sz:0;
+  var aFiles=files(a).filter(function(f){return pick.has(a.id+":"+f[0]);}).reduce(function(s,f){return s+mbv(f);},0);
+  var extra=Math.max(0,aSelf+aFiles-a.sz);
+  var detail=open?'<div class="files"><div class="fh"><span>将处理的文件 '+esc(a.n)+'</span><span>逐项核对后可取消勾选</span></div>'+files(a).map(function(f){
+    var k=a.id+":"+f[0],onp=pick.has(k);
+    return '<div class="fl">'+chk(onp,'data-pick="'+esc(k)+'"')+'<span class="lab">'+esc(f[0])+'</span><span class="path">'+esc(f[1])+'</span><span class="fsz">'+esc(f[2])+'</span></div>';
+  }).join('')+'<div class="fnote">只列出与该应用标识完全匹配的文件，共享文件不自动勾选</div></div>':"";
+  return '<div class="card"><div class="card-top">'+
+   '<div class="ic" style="--c1:'+a.c[0]+';--c2:'+a.c[1]+'">'+esc(a.icon)+'</div>'+
+   '<div><div class="nm">'+esc(a.n)+'</div><div class="mt">v'+a.v+' '+fmt(a.sz)+' <span class="st '+a.live+'">'+esc(a.st)+'</span></div></div>'+
+   '<div class="rc"><div class="sz">'+fmt(a.sz)+'</div>'+chk(on,'data-app="'+(a.id)+'"')+'</div>'+
+  '</div>'+(on?'<div class="fold"><span class="am">预计 <b>'+fmt(aSelf+aFiles)+'</b>'+(extra>0.005?' +'+fmt(extra):"")+'</span><span><button data-toggle="'+a.id+'">'+((open)?"收起文件 上":"查看关联文件 下")+'</button></span></div>':"")+detail+'</div>';
+ }).join('');
+ var chosen=apps.filter(function(a){return sel.has(a.id);});
+ var gb=chosen.reduce(function(s,a){return s+amt(a);},0);
+ $("sel").innerHTML=chosen.length?'<span class="cnt">'+chosen.length+'</span><span>个应用</span><span class="amt">预计 <b>'+fmt(gb)+'</b></span>':'<span style="color:#9a9690">未选择应用</span>';
+ $("remove").disabled=!chosen.length;$("remove").textContent=chosen.length?("移到废纸篓 "+chosen.length+" 项"):"移到废纸篓";$("clear").hidden=!chosen.length;
+}
+function pickAll(a){files(a).forEach(function(f){pick.add(a.id+":"+f[0]);});if(a.id!=="iina")pick.add(a.id+":app");}
+document.getElementById("list").addEventListener("click",function(e){
+ var app=e.target.closest("[data-app]"),tg=e.target.closest("[data-toggle]"),pk=e.target.closest("[data-pick]");
+ if(app){var a=apps.find(function(x){return x.id===app.dataset.app;});if(!a)return;if(sel.has(a.id)){sel.delete(a.id);exp.delete(a.id);}else{sel.add(a.id);pickAll(a);}render();return;}
+ if(tg){var id=tg.dataset.toggle;if(exp.has(id))exp.delete(id);else exp.add(id);render();return;}
+ if(pk){var k=pk.dataset.pick;if(pick.has(k))pick.delete(k);else pick.add(k);render();}
+});
+$("clear").addEventListener("click",function(){sel.clear();exp.clear();render();});
+$("remove").addEventListener("click",function(){var c=apps.filter(function(a){return sel.has(a.id);});
+ $("modal").innerHTML='<div class="modal-back"><div class="modal"><h2>确认移入废纸篓？</h2><p>将处理 '+c.length+' 个应用及其关联文件。运行中的应用需先退出。</p><ul>'+c.map(function(a){return '<li><span>'+esc(a.n)+'</span><span>'+fmt(amt(a))+'</span></li>';}).join("")+'</ul><p class="fine">演示原型 不会移动或删除真实文件</p><div class="modal-act"><button id="cm">返回核对</button><button class="danger" id="cf">移入废纸篓（演示）</button></div></div></div>';
+ $("cm").onclick=function(){$("modal").innerHTML="";};$("cf").onclick=function(){$("modal").innerHTML="";var t=document.getElementById("toast");t.innerHTML='<div class="toast">演示完成 实际会把所选文件移到废纸篓</div>';setTimeout(function(){t.innerHTML="";},2400);};});
+render();
+</script>
+</body></html>

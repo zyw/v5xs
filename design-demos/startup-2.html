@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>启动项 方向B 应用归属</title>
+<style>
+:root{--bg:#1E2824;--panel:#26332C;--panel-hi:#2B3A30;--line:#384A3E;--ink:#EDF4EE;--muted:#A9BCAE;--faint:#7C9082;--mint:#8ED8B3;--mintdeep:#3D6B52;--teal:#3FA9A0;--amber:#E9C87A}
+*{box-sizing:border-box}body{margin:0;min-width:1040px;background:#141b18;color:var(--ink);font-family:"PingFang SC","Hiragino Sans GB",-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+.stage{min-height:100vh;display:grid;place-items:center;padding:24px 16px}
+.win{width:1120px;height:800px;display:flex;flex-direction:column;background:var(--bg);border:1px solid #3b4f42;border-radius:20px;overflow:hidden;box-shadow:0 40px 120px #000a}
+.tbar{display:flex;align-items:center;gap:12px;height:52px;padding:0 20px;flex:none;background:linear-gradient(180deg,#24332B,#202B26);border-bottom:1px solid var(--line)}
+.lights{display:flex;gap:8px;margin-right:6px}.light{width:12px;height:12px;border-radius:50%}.r{background:#e0705f}.y{background:#e2b04a}.g{background:#63c554}.logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--mint),var(--teal));display:grid;place-items:center;color:#0d2418;font-weight:900;font-size:16px}.tbar .an{font-size:14px;font-weight:700}.tbar .an b{color:var(--mint)}.tbar .sub{font-size:11px;color:var(--faint)}.tbar .sp{flex:1}
+.seg{display:flex;padding:3px;background:#202D27;border:1px solid var(--line);border-radius:12px}.seg button{border:0;background:transparent;color:var(--muted);padding:8px 24px;border-radius:9px;font-size:13px;font-weight:600}.seg button.on{background:#36503F;color:#EAF7EE;box-shadow:inset 0 0 0 1px #4A6B57}
+.lead{display:flex;align-items:center;gap:20px;padding:20px 28px 10px;flex:none}
+.lead h2{margin:0;font-size:22px;font-weight:800}.lead p{margin:4px 0 0;font-size:12.5px;color:var(--muted)}
+.lead .sp{flex:1}.lk{font-size:12px;padding:6px 12px;border-radius:999px;background:rgba(142,216,179,.14);color:var(--mint);font-weight:600}
+.list{flex:1;overflow:auto;padding:6px 24px 14px}
+.appcard{margin-bottom:12px;border:1px solid var(--line);border-radius:14px;background:var(--panel);overflow:hidden}
+.apphead{display:flex;align-items:center;gap:12px;padding:12px 16px;background:linear-gradient(90deg,#24322A,#202C26)}
+.apphead .ic{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;color:#fff;font-weight:700;background:linear-gradient(135deg,var(--c1),var(--c2))}
+.apphead .an2{font-size:14.5px;font-weight:700}.apphead .ap{font-size:10.5px;color:var(--faint);margin-top:2px}
+.apphead .rightnote{font-size:11px;color:var(--faint);margin-left:auto}
+.subrow{display:grid;grid-template-columns:minmax(0,1fr) auto 64px;gap:12px;align-items:center;padding:9px 16px;border-top:1px solid var(--line)}
+.subrow .what{font-size:13px;color:var(--ink)}.subrow .what small{display:block;color:var(--faint);font-size:10.5px;font-family:ui-monospace,Menlo,monospace;margin-top:2px}
+.tgl{width:44px;height:25px;border-radius:999px;border:0;position:relative;background:#3a4b40;transition:background .15s}.tgl.on{background:var(--mint)}.tgl::after{content:"";position:absolute;top:2.5px;left:3px;width:20px;height:20px;border-radius:50%;background:#e9f2ec;box-shadow:0 1px 3px #0006;transition:left .15s}.tgl.on::after{left:21px}
+.badge{font-size:10.5px;padding:3px 8px;border-radius:999px;font-weight:600}.b.user{background:rgba(142,216,179,.14);color:var(--mint)}.b.sys{background:rgba(233,200,122,.14);color:var(--amber)}
+.footer{flex:none;display:flex;align-items:center;justify-content:space-between;min-height:60px;padding:12px 26px;background:linear-gradient(180deg,#202C27,#1D2722);border-top:1px solid var(--line);color:var(--faint);font-size:12px}
+</style></head>
+<body><div class="stage"><div class="win">
+<div class="tbar">
+ <div class="lights"><span class="light r"></span><span class="light y"></span><span class="light g"></span></div>
+ <div class="logo">V</div><span class="an">v5xs <b>启动项</b></span><span class="sub">按应用查看自启</span><div class="sp"></div>
+ <div class="seg"><button>卸载</button><button class="on">启动项</button></div>
+</div>
+<div class="lead"><div><h2>谁在随系统悄悄启动？</h2><p>按宿主应用分组，一眼看出哪些程序给你加了开机自启。</p></div><div class="sp"></div><span class="lk">共 5 个应用 · 10 项自启</span></div>
+<div class="list" id="list"></div>
+<div class="footer"><span>应用归属按同名 Bundle / 常见宿主估算；仅展示。</span><span>开关为原型演示</span></div>
+</div></div>
+<script>
+var APPS=[
+ {n:"Clash Verge",o:"网络代理",c:["#e8a87c","#b06b3e"],
+  subs:[{w:"登录启动",hr:"SMAppService",on:false,user:true},{w:"后台代理 (LaunchAgent)",hr:"io.github.clash-verge-rev.clash-verge-rev.plist",on:false,user:true},{w:"系统代理 Helper",hr:"com.west2online.ClashX.ProxyConfigHelper.plist",on:false,sys:true}]},
+ {n:"搜狗输入法",o:"输入法",c:["#8dc1b8","#3f7a6e"],
+  subs:[{w:"输入法服务",hr:"com.sogou.SogouServices.plist",on:true,sys:true},{w:"任务管理",hr:"com.sogou.SogouTaskManager.plist",on:true,sys:true}]},
+ {n:"Docker",o:"容器",c:["#6f9ede","#31508e"],
+  subs:[{w:"网络 Socket (守护)",hr:"com.docker.socket.plist",on:false,sys:true},{w:"虚拟网络 (守护)",hr:"com.docker.vmnetd.plist",on:false,sys:true}]},
+ {n:"magpie",o:"AI 助手",c:["#9a8bc8","#5d4c8c"],
+  subs:[{w:"后台自动启动",hr:"com.yetone.magpie.plist",on:true,user:true}]},
+ {n:"PixPin",o:"截图与标注",c:["#e9807f","#a94a4d"],subs:[{w:"登录启动",hr:"SMAppService",on:true,user:true}]}];
+var $=function(id){return document.getElementById(id);};
+function render(){
+ $("list").innerHTML=APPS.map(function(a){
+  var subs=a.subs.map(function(s){
+   return '<div class="subrow"><div class="what">'+s.w+'<small>'+s.hr+'</small></div>'+
+   '<span class="badge '+(s.sys?"sys":"user")+'">'+(s.sys?"系统":"用户")+'</span>'+
+   '<button class="tgl '+(s.on?"on":"")+'" onclick="this.classList.toggle(\'on\')"></button></div>';
+  }).join("");
+  return '<div class="appcard"><div class="apphead"><div class="ic" style="--c1:'+a.c[0]+';--c2:'+a.c[1]+'">'+a.n[0]+'</div>'+
+   '<div><div class="an2">'+a.n+'</div><div class="ap">'+a.o+'</div></div>'+
+   '<div class="rightnote">'+a.subs.length+' 项自启</div></div>'+subs+'</div>';
+ }).join("");
+}
+render();
+</script>
+</body></html>

@@ -183,7 +183,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func openUninstaller() {
         if uninstallerWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 900, height: 680),
+                contentRect: NSRect(x: 0, y: 0, width: 980, height: 780),
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
@@ -191,7 +191,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.title = "v5xs · 软件卸载"
             window.isReleasedWhenClosed = false
             window.delegate = self
-            window.minSize = NSSize(width: 720, height: 480)
+            window.minSize = NSSize(width: 780, height: 560)
             window.contentView = NSHostingView(rootView: UninstallerPanel())
             uninstallerWindow = window
             window.center()
