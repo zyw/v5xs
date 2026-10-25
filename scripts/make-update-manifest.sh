@@ -34,6 +34,9 @@ PROJECT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 #
 DEFAULT_REPO="${V5XS_UPDATE_REPO:-zyw/v5xs}"
 DEFAULT_URL_BASE=""   # 解析出版本后按 tag 构造；无法构成 tag 时回退到 latest/download
+# 注意：发布目标必须是 GitHub.com 的 github 远端（https://github.com/zyw/v5xs.git），
+# 而不是 origin（onedev.v5ai.xin）。只有 github 的 Releases 附件才生成客户端拉的
+# releases/latest/download/update.json。DEFAULT_REPO 需与该远端 owner/repo 一致。
 
 app_dir="$PROJECT_DIR/dist/v5xs.app"
 dmg_dir="$PROJECT_DIR/dist"
@@ -93,7 +96,7 @@ architecture 推断规则（按顺序）:
   文件名无提示 -> 回退到 `uname -m`（arm64 / x86_64，其它 -> universal）
 
 示例:
-  # 生成清单（DMG 自动从 dist/ 发现，URL 指向 GitHub 最新 Release）
+  # 生成清单（DMG 自动从 dist/ 发现，下载地址按发布 tag v<version> 生成）
   bash scripts/make-update-manifest.sh
 
   # 指定 DMG、下载前缀与发布说明

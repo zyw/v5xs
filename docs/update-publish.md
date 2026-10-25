@@ -141,10 +141,22 @@ https://github.com/zyw/v5xs/releases/latest/download/update.json
 > `https://raw.githubusercontent.com/<owner>/<repo>/main/dist/update.json`。
 > 但 raw 有 CDN 缓存、且无法在 Releases 页面一并管理；推荐用附件方式。
 
-发布步骤如下（`tag` 与 `version` 一致，例如 0.2.0 → v0.2.0）：
+发布步骤如下（`tag` 与 `version` 一致，例如 0.2.0 → v0.2.0）。
+
+> **发布目标必须是 GitHub.com 的 `github` 远端。** 本仓库配有两个远端：
+>
+> `github  https://github.com/zyw/v5xs.git        (fetch/push)`
+> `origin  https://onedev.v5ai.xin/v5xs.git       (fetch/push)`
+>
+> 只有 `github`（GitHub.com）的 Releases 附件才会生成 `releases/latest/download/update.json`
+> 供客户端拉取；推到 `origin`（OneDev）**不会**产生该地址。下面所有 git 命令都显式写
+> `git push github`，避免推错远端。
 
 ```bash
 version="0.2.0"; tag="v$version"
+
+# 0) 确认你要发布到 GitHub.com（远程名 github，URL 指向 github.com/zyw/v5xs）
+git remote get-url github   # 期望 https://github.com/zyw/v5xs.git
 
 # 1) 生成清单（缺省 url-base 自动按 tag 指向 Releases 的不可变下载地址）
 bash scripts/make-update-manifest.sh \
@@ -152,15 +164,19 @@ bash scripts/make-update-manifest.sh \
   --out dist/update.json
 
 # 2) 只是仓库内留一份备选（可选，供 raw.github 方式）；dist/ 在 .gitignore 里需 -f
-git add -f dist/update.json && git commit -m "release: update.json for $tag" && git push
+git add -f dist/update.json && git commit -m "release: update.json for $tag" && git push github main
 
 # 3) 创建 Release，同时上传 DMG 与 update.json 附件
 gh release create "$tag" dist/v5xs-*.dmg dist/update.json \
   --title "v5xs $version" --notes-file docs/release-notes/$version.md
+
+# 推 tag（GitHub Actions 只在 github 远端触发）用显式远端：
+git push github "$tag"
 ```
 
-> 也可把第 3 步自动化为 [.github/workflows/publish-update-feed.yml](../.github/workflows/publish-update-feed.yml)：
-> 它会在 push `v*` tag 时把仓库里的 `dist/update.json` 上传到最新 Release（--clobber）。
+> 也可把第 3 步自动化为 [.github/workflows/publish-update-feed.yml](../.github/workflows/publish-update-feed.yml)。
+> **注意**：该工作流在 push `v*` tag 时触发，因此 tag 必须推到 `github`（GitHub.com），
+> 不能只推到 `origin`——OneDev 不会运行 GitHub Actions。
 
 要点：
 
