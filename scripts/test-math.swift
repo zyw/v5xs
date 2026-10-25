@@ -66,4 +66,48 @@ let processLine = "45633 1.1 33312 Thu Oct 22 19:59:09 2026 /Applications/Foo Ba
 check(ProcessReading.parse(processLine)?.executablePath == "/Applications/Foo Bar.app/Contents/MacOS/Foo", "process path with spaces")
 check(ProcessReading.parse(processLine)?.startTime == "Thu Oct 22 19:59:09 2026", "process start token")
 check(ProcessReading.parse(processLine)?.name == "Foo Bar", "app display name")
-print("59 metric checks passed")
+// 更新清单解析：契约字段、架构回落、版本比较与错误分支。
+let feedSample = Data(#"""
+{"version":"0.2.0","build":2,"minimumSystemVersion":"14.0","publishedAt":"2026-10-25T10:00:00Z",
+ "notes":"修复若干问题","downloads":[
+   {"architecture":"arm64","url":"https://example.com/v5xs-arm64.dmg","size":12345678,
+    "sha256":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"},
+   {"architecture":"universal","url":"https://example.com/v5xs-universal.dmg"}]}
+"""#.utf8)
+let feedRelease = try UpdateFeed.release(from: feedSample)
+check(feedRelease.version == "0.2.0", "feed version")
+check(feedRelease.build == 2, "feed build")
+check(feedRelease.minimumSystemVersion == "14.0", "feed minimum system")
+check(feedRelease.downloads.count == 2, "feed downloads")
+check(feedRelease.downloads.first?.size == 12_345_678, "feed download size")
+check(feedRelease.downloads.last?.size == nil, "absent download size stays nil")
+check(feedRelease.publishedAt == ISO8601DateFormatter().date(from: "2026-10-25T10:00:00Z"), "feed published date")
+check(UpdateFeed.download(for: feedRelease, architecture: "arm64")?.architecture == "arm64", "feed exact arch")
+check(UpdateFeed.download(for: feedRelease, architecture: "ARM64")?.architecture == "arm64", "feed arch is case insensitive")
+check(UpdateFeed.download(for: feedRelease, architecture: "x86_64")?.architecture == "universal", "feed universal fallback")
+check(UpdateFeed.download(for: feedRelease, architecture: "  ") == nil, "feed blank arch")
+check(UpdateFeed.isNewer(feedRelease, thanBuild: 1, currentVersion: "0.1.0"), "newer build")
+check(!UpdateFeed.isNewer(feedRelease, thanBuild: 2, currentVersion: "0.2.0"), "same build same version")
+check(!UpdateFeed.isNewer(feedRelease, thanBuild: 3, currentVersion: "0.1.0"), "older build")
+check(UpdateFeed.isNewer(feedRelease, thanBuild: 2, currentVersion: "0.1.9"), "same build higher version")
+check(!UpdateFeed.isNewer(feedRelease, thanBuild: 2, currentVersion: "0.10.0"), "same build lower version")
+check(UpdateFeed.compareVersions("1.2.10", "1.2.9") == 1, "version comparison is numeric")
+check(UpdateFeed.compareVersions("0.2.0", "0.2") == 0, "version missing component is zero")
+check(UpdateFeed.satisfiesMinimumSystem(nil, currentVersion: "14.0.0"), "absent minimum system")
+check(!UpdateFeed.satisfiesMinimumSystem("15.0", currentVersion: "14.6.1"), "unmet minimum system")
+
+func expectFeedError(_ json: String, _ expected: UpdateFeedError, _ name: String) {
+    do {
+        _ = try UpdateFeed.release(from: Data(json.utf8))
+        check(false, name + " (did not throw)")
+    } catch {
+        check((error as? UpdateFeedError) == expected, name)
+    }
+}
+expectFeedError(#"{"build":2,"downloads":[{"architecture":"arm64","url":"https://e.com/a.dmg"}]}"#, .missingVersion, "feed missing version")
+expectFeedError(#"{"version":"0.2.0","build":2}"#, .missingDownloads, "feed missing downloads")
+expectFeedError(#"{"version":"0.2.0","build":2,"downloads":[]}"#, .missingDownloads, "feed empty downloads")
+expectFeedError("not json", .malformed, "feed malformed json")
+expectFeedError(#"{"version":"0.2.0","downloads":[{"architecture":"arm64","url":"https://e.com/a.dmg"}]}"#, .malformed, "feed missing build")
+expectFeedError(#"{"version":"0.2.0","build":2,"downloads":[{"architecture":"arm64","url":"file:///tmp/a.dmg"}]}"#, .malformed, "feed non http url")
+print("78 metric checks passed")

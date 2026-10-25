@@ -14,6 +14,7 @@ private enum Palette {
 
 struct MonitorPanel: View {
     @ObservedObject var store: MonitorStore
+    @ObservedObject var updates: UpdateChecker
     let onOpenSettings: () -> Void
     let onOpenUninstaller: () -> Void
     @State private var headerHovering = false
@@ -42,7 +43,7 @@ struct MonitorPanel: View {
             HStack {
                 Button("设置", action: onOpenSettings)
                 Spacer()
-                Text("每秒更新").foregroundStyle(Palette.muted)
+                Text("\(updates.currentVersionText) · 每秒更新").foregroundStyle(Palette.muted)
                 Spacer()
                 Button("退出") { NSApp.terminate(nil) }
             }
@@ -455,6 +456,7 @@ private extension View {
 
 struct SettingsPanel: View {
     @ObservedObject var store: MonitorStore
+    @ObservedObject var updates: UpdateChecker
 
     private var cacheDays: Int { Int(store.appCacheDays.rounded()) }
 
@@ -477,6 +479,8 @@ struct SettingsPanel: View {
                     .foregroundStyle(.secondary)
             }
 
+            UpdateSection(updates: updates)
+
             Text("GPU 活跃度按设备支持情况显示；CPU／GPU 温度仅在已验证的 Mac14,2 上读取。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -484,6 +488,6 @@ struct SettingsPanel: View {
         .formStyle(.grouped)
         .padding(12)
         .frame(minWidth: 380, idealWidth: 420, maxWidth: 460,
-               minHeight: 320, idealHeight: 340, maxHeight: .infinity, alignment: .top)
+               minHeight: 440, idealHeight: 500, maxHeight: .infinity, alignment: .top)
     }
 }

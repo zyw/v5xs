@@ -19,6 +19,7 @@ v5xs 是一款用 SwiftUI + AppKit 编写的 macOS 菜单栏系统监控工具�
 - **软件卸载**：点按面板顶部评分卡片进入独立窗口，按名称 / 占用体积 / 最近使用 / 安装时间排序，批量选择应用并逐项核对关联文件后移入废纸篓。
 - **启动项管理**：按来源分组列出登录项、LaunchAgent 与 LaunchDaemon，一键启用 / 禁用。
 - **应用列表缓存**：扫描结果缓存到本地，缓存时长可在设置中调整（默认 30 天）。
+- **检查更新**：读取更新清单比对 `CFBundleVersion`，有新版时在设置页展示版本与发行说明，并一键打开下载页。
 
 ## 📸 界面预览
 
@@ -68,6 +69,7 @@ bash scripts/build-dmg.sh
 - **右键点击菜单栏动物**：切换动物形象、暂停动画、设置登录启动、进入设置或退出。
 - **点按面板顶部评分卡片**：打开软件卸载窗口。
 - 卸载窗口顶部可切换 **卸载 / 启动项** 两个标签页。
+- **右键菜单 → 检查更新…**：手动检查；发现新版本时菜单项会直接显示版本号。设置页「更新」分区显示当前版本、上次检查时间与检查结果。
 
 ## 🧭 数据与限制
 
@@ -78,6 +80,23 @@ bash scripts/build-dmg.sh
 - 软件卸载：最近使用来自 Spotlight（不可读时显示“未知”），大小为扫描估算；关联文件会扫描当前用户 `~/Library` 下与 Bundle ID 匹配的路径，共享文件与归属不明的路径不自动选中；确认后调用系统废纸篓。应用列表带缓存（默认 30 天，可在设置中调整）。
 - 启动项：登录项、LaunchAgent / LaunchDaemon 按来源分组展示。用户级代理可直接开关；系统级代理与守护进程需管理员权限；第三方登录项建议在“系统设置 → 通用 → 登录项”中管理。
 - 进程终止依赖应用权限，仅对当前仍可确认身份的 GUI 应用执行；**沙盒分发不能使用这些跨应用终止操作**。
+
+## 🔄 检查更新
+
+v5xs 采用「清单 + 跳转下载」的轻量更新方式，不做静默替换安装：
+
+1. 启动后若距上次检查超过 24 小时，会在后台静默检查一次；也可在右键菜单或设置页手动触发。
+2. 客户端用 `URLSession` 拉取 `Info.plist` 中 `V5XSUpdateFeedURL` 指向的 `update.json`——即每个正式版作为 **GitHub Releases 附件**发布的固定名清单（`releases/latest/download/update.json` 始终指向最新版；可用环境变量 `V5XS_UPDATE_FEED` 覆盖，便于本地联调）。
+3. 清单包含版本号、构建号、最低系统版本、发行说明与各架构安装包的 URL / 大小 / SHA-256。
+4. 比对 `CFBundleVersion`（相等时再比语义版本号）；有新版且当前系统满足最低版本要求时，展示版本号、发行说明与「下载 DMG」按钮，点击用 `NSWorkspace` 打开下载链接。
+
+发布侧用 `scripts/make-update-manifest.sh`（默认按发布 tag 生成不可变的 DMG 下载地址）生成清单，可配合 [.github/workflows/publish-update-feed.yml](.github/workflows/publish-update-feed.yml) 把 `update.json` 自动上传为 Release 附件，流程见 [docs/update-publish.md](docs/update-publish.md)；各方案对比与选型理由见 [docs/update-research.md](docs/update-research.md)。
+
+<p align="center">
+  <img src="docs/update-section.png" width="420" alt="设置页的更新分区" />
+</p>
+
+> 当前边界：只做检查与跳转，不下载、不替换、不重启。清单与安装包走 HTTPS；建议后续为安装包补充签名校验（`downloads[].sha256` 字段已预留）。
 
 ## ✅ 测试环境
 

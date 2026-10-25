@@ -4,6 +4,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = MonitorStore()
+    private let updates = UpdateChecker()
     private let statusItem = NSStatusBar.system.statusItem(withLength: 34)
     private let popover = NSPopover()
     private var settingsWindow: NSWindow?
@@ -17,7 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.setActivationPolicy(.accessory)
         popover.behavior = .transient
         let panelController = NSHostingController(
-            rootView: MonitorPanel(store: store, onOpenSettings: { [weak self] in
+            rootView: MonitorPanel(store: store, updates: updates, onOpenSettings: { [weak self] in
                 self?.openSettings()
             }, onOpenUninstaller: { [weak self] in
                 self?.openUninstaller()
@@ -32,6 +33,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem.button?.action = #selector(statusClicked)
         statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
         store.start()
+        updates.startAutomaticChecks()
         let timer = Timer(timeInterval: 1.0 / 120, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.updateIcon() }
         }
@@ -49,7 +51,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.contentView = NSHostingView(
-                rootView: MonitorPanel(store: store, onOpenSettings: { [weak self] in
+                rootView: MonitorPanel(store: store, updates: updates, onOpenSettings: { [weak self] in
                     self?.openSettings()
                 }, onOpenUninstaller: { [weak self] in
                     self?.openUninstaller()
@@ -59,6 +61,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             previewWindow = window
+        }
+        // 调试入口：直接打开设置窗口，便于在无辅助功能权限时检查「更新」分区。
+        if ProcessInfo.processInfo.arguments.contains("--settings-window") {
+            openSettings()
         }
     }
 
@@ -127,6 +133,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         login.target = self
         login.state = store.launchAtLogin ? .on : .off
         menu.addItem(login)
+        let check = NSMenuItem(title: updates.menuTitle, action: #selector(checkForUpdates), keyEquivalent: "")
+        check.target = self
+        menu.addItem(check)
         let settings = NSMenuItem(title: "设置…", action: #selector(openSettings), keyEquivalent: "")
         settings.target = self
         menu.addItem(settings)
@@ -161,20 +170,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
+    /// 菜单里的「检查更新」：先打开设置窗口展示状态，再强制检查一次（绕过节流）。
+    @objc private func checkForUpdates() {
+        openSettings()
+        Task { await updates.check(force: true) }
+    }
+
     @discardableResult
     private func openSettingsWindow() -> NSWindow? {
         if settingsWindow == nil {
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 380),
+                contentRect: NSRect(x: 0, y: 0, width: 420, height: 500),
                 styleMask: [.titled, .closable, .resizable],
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: 360, height: 320)
+            window.minSize = NSSize(width: 360, height: 440)
             window.title = "v5xs 设置"
             window.isReleasedWhenClosed = false
             window.delegate = self
-            window.contentView = NSHostingView(rootView: SettingsPanel(store: store))
+            window.contentView = NSHostingView(rootView: SettingsPanel(store: store, updates: updates))
             settingsWindow = window
         }
         return settingsWindow

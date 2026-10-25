@@ -1,0 +1,45 @@
+# 在每次发布（打到 v* tag，或手动运行）后，把 dist/update.json 作为
+# GitHub Releases 附件上传到最新 Release，供客户端通过
+#   https://github.com/<owner>/<repo>/releases/latest/download/update.json
+# 拉取（见 Resources/Info.plist 的 V5XSUpdateFeedURL）。
+#
+# 前提：dist/update.json 已由 make-update-manifest.sh 生成并提交，且目标 Release 已存在
+#       （通常由你的发版流程创建并上传 DMG）。
+name: Publish update feed
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  upload-feed:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Ensure update.json exists
+        run: |
+          if [ ! -f dist/update.json ]; then
+            echo "dist/update.json 缺失：请在本地先生成并提交（make-update-manifest.sh）。" >&2
+            exit 1
+          fi
+
+      - name: Upload update.json to latest release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          latest=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
+          if [ -z "$latest" ]; then
+            echo "没有找到任何 Release，请先创建 Release 并上传 DMG。" >&2
+            exit 1
+          fi
+          gh release upload "$latest" dist/update.json --clobber
+          echo "已上传 update.json 到 Release $latest"
+
+      - name: Show feed URL
+        run: echo "客户端订阅: https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/update.json"

@@ -19,6 +19,7 @@ v5xs is a macOS menu-bar system monitor written in **SwiftUI + AppKit**. It show
 - **App uninstaller**: tap the score card at the top of the panel to open a dedicated window; sort by name / size / last-used / install date, batch-select apps, review related files, then move them to Trash.
 - **Startup items manager**: lists login items, LaunchAgents & LaunchDaemons grouped by source, with one-click enable / disable.
 - **App list caching**: scan results are cached locally; the cache duration is adjustable in Settings (default 30 days).
+- **Update check**: compares the published manifest against `CFBundleVersion`, shows the new version and release notes in Settings, and opens the download page in one click.
 
 ## 📸 Screenshots
 
@@ -68,6 +69,7 @@ bash scripts/build-dmg.sh
 - **Right-click the menu bar animal**: switch character, pause animation, enable launch at login, open Settings, or quit.
 - **Click the score card at the top of the panel**: open the software uninstaller window.
 - The uninstaller window has two tabs at the top: **Uninstall / Startup Items**.
+- **Right-click menu → Check for Updates…**: check manually; the item shows the version number once an update is found. The “Updates” section in Settings shows the current version, last check time and result.
 
 ## 🧭 Data & Limitations
 
@@ -78,6 +80,19 @@ bash scripts/build-dmg.sh
 - Uninstaller: last-used comes from Spotlight (shows “unknown” when unavailable); sizes are scanned estimates. Related files are matched against the current user's `~/Library` by bundle ID; shared files and files of unclear ownership are not auto-selected. Confirmed files are moved to the system Trash. The app list is cached locally (default 30 days, adjustable in Settings).
 - Startup items: login items, LaunchAgents & LaunchDaemons are shown grouped by source. User-level agents can be toggled directly; system agents & daemons require admin privileges; third-party login items are best managed in “System Settings → General → Login Items”.
 - Process termination depends on app permissions and runs only on identifiable GUI apps; **sandbox distribution cannot use these cross-app termination operations**.
+
+## 🔄 Update Checks
+
+v5xs uses a lightweight “manifest + open the download page” flow and never replaces itself silently:
+
+1. On launch it checks in the background if the last check is older than 24 hours; you can also trigger it from the right-click menu or Settings.
+2. The client fetches the `update.json` manifest from `V5XSUpdateFeedURL` in `Info.plist` via `URLSession` — a fixed-name file published as a **GitHub Release asset** (`releases/latest/download/update.json` always points at the newest; override with `V5XS_UPDATE_FEED` for local testing).
+3. The manifest carries the version, build number, minimum system version, release notes, and per-architecture download URL / size / SHA-256.
+4. The client compares `CFBundleVersion` (falling back to semantic version when equal). When a newer build exists and the current OS meets the minimum requirement, it shows the version, release notes and a “Download DMG” button that opens the URL with `NSWorkspace`.
+
+Publishing uses `scripts/make-update-manifest.sh`; see [docs/update-publish.md](docs/update-publish.md) for the release flow and [docs/update-research.md](docs/update-research.md) for the comparison of update approaches.
+
+> Current scope: check and hand off to the browser only — no download, replacement or relaunch. The manifest and archives are served over HTTPS; `downloads[].sha256` is reserved for a future signature/checksum verification step.
 
 ## ✅ Tested Environment
 
