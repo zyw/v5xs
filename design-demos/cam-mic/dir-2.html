@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>v5xs · 隐私 · 方向二</title>
+<style>
+  :root{--bg:#1f2927;--card:#2b3833;--mint:#92dbb8;--blue:#85bfeb;--amber:#f5c785;--muted:#a3b5ab;--text:#eaf2ec;--line:rgba(255,255,255,.08)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#131b19;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:24px}
+  .pop{width:430px;background:var(--bg);border-radius:18px;padding:16px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .head{display:flex;align-items:baseline;gap:8px;font-size:15px;font-weight:700;padding:2px 2px 14px}
+  .head small{margin-left:auto;font-size:10px;color:var(--muted);font-weight:400}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .block{background:var(--card);border-radius:var(--r-lg,13px);padding:14px}
+  .block .t{display:flex;align-items:center;gap:7px;font-size:12px;font-weight:600;color:var(--muted)}
+  .block .t .i{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px}
+  .block .t .i.cam{background:rgba(146,219,184,.16);color:var(--mint)}
+  .block .t .i.mic{background:rgba(245,199,133,.22);color:var(--amber)}
+  .block .state{font-size:24px;font-weight:700;margin-top:14px;letter-spacing:.5px}
+  .block.cam .state{color:var(--mint)}
+  .block.mic .state{color:var(--amber)}
+  .block .proc{font-size:13px;margin-top:6px;color:var(--text)}
+  .block .since{font-size:10px;color:var(--muted);margin-top:10px;padding-top:8px;border-top:1px solid var(--line)}
+  .block .since b{color:var(--text);font-weight:600}
+  .hist{background:var(--card);border-radius:13px;margin-top:10px;padding:12px 14px}
+  .hist .ht{font-size:11px;color:var(--muted);margin-bottom:8px}
+  .hist .row{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0}
+  .hist .row .d{width:7px;height:7px;border-radius:50%}
+  .hist .row.d-cam .d{background:var(--mint)}
+  .hist .row.d-mic .d{background:var(--amber)}
+  .hist .row .tm{margin-left:auto;font-size:10px;color:var(--muted)}
+  .foot{margin-top:14px;font-size:10px;color:var(--muted);display:flex;gap:6px;align-items:center}
+</style>
+</head>
+<body>
+<div class="pop">
+  <div class="head">隐私 · 看护 <small>绿=相机在用 · 橙=麦克风在用</small></div>
+  <div class="grid">
+    <div class="block cam">
+      <div class="t"><span class="i">◉</span>摄像头</div>
+      <div class="state">使用中</div>
+      <div class="proc">微信</div>
+      <div class="since">已占用 <b>4 分 12 秒</b></div>
+    </div>
+    <div class="block mic">
+      <div class="t"><span class="i">◉</span>麦克风</div>
+      <div class="state">使用中</div>
+      <div class="proc">微信</div>
+      <div class="since">已占用 <b>1 小时 5 分</b></div>
+    </div>
+  </div>
+  <div class="hist">
+    <div class="ht">最近占用</div>
+    <div class="row d-cam"><span class="d"></span>摄像头 · 微信 <span class="tm">刚刚</span></div>
+    <div class="row d-mic"><span class="d"></span>麦克风 · FaceTime <span class="tm">10:42</span></div>
+    <div class="row d-cam"><span class="d"></span>摄像头 · 腾讯会议 <span class="tm">昨天</span></div>
+  </div>
+  <div class="foot">与你菜单栏的绿/橙指示灯一致 · 无法识别来源时显示「有其他进程正在访问」</div>
+</div>
+</body>
+</html>

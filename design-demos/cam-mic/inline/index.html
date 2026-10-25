@@ -1,0 +1,21 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>v5xs 摄像头/麦克风 · 嵌入监控面板 · 三方向</title><style>
+body{background:#131b19;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#eaf2ec;padding:26px}
+h1{font-size:19px;color:#92dbb8;margin:0 0 4px;font-weight:700}
+.sub{color:#a3b5ab;font-size:12px;margin-bottom:20px;line-height:1.6}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;align-items:start}
+.card{background:#1f2927;border-radius:16px;padding:12px}
+.card img{width:100%;border-radius:10px;display:block;background:#2b3833}
+.card h2{font-size:14px;margin:10px 0 4px}
+.card .tag{font-size:10px;color:#92dbb8;background:rgba(146,219,184,.12);display:inline-block;padding:2px 8px;border-radius:20px;margin-bottom:8px}
+.card .d{font-size:11.5px;color:#a3b5ab;line-height:1.7}
+.foot{margin-top:22px;color:#a3b5ab;font-size:11.5px;line-height:1.7;border-top:1px solid rgba(255,255,255,.08);padding-top:14px}
+</style></head><body>
+  <h1>摄像头 / 麦克风占用检测 · 嵌入监控面板（非弹窗）</h1>
+  <div class="sub">三个方向都把状态直接放进现有 430px 监控面板里，不新增弹窗；绿=相机·橙=麦克风（与 macOS 指示灯一致），占用方进程名会实时更新。</div>
+  <div class="grid">
+    <div class="card"><img src="dir-1.png"><h2>方向一 · 标题指示灯</h2><span class="tag">最小改动 · 一眼开关</span><div class="d">在两颗指示灯徽标嵌入标题行「麦克风 · 微信」橙、「摄像头 · 微信」绿。占用时点亮，空闲时变灰。不占卡片空间，零学习成本。</div></div>
+    <div class="card"><img src="dir-2.png"><h2>方向二 · 独立隐私卡片</h2><span class="tag">信息完整 · 一块区域</span><div class="d">在内存/可用空间下方加一块「隐私」卡，左右分相机/麦克风状态 + 占用进程。信息密度最高，占用一块整卡。</div></div>
+    <div class="card"><img src="dir-3.png"><h2>方向三 · 顶部隐私状态条</h2><span class="tag">常驻条 · 横贯整行</span><div class="d">在 CPU 卡上方加一条整行「隐私」条：摄像头/麦克风各带进程 + 左右两颗绿/橙状态灯。横贯面板，最醒目也最占空间。</div></div>
+  </div>
+  <div class="foot">诚实边界：识别不到具体 App 时，进程名位置显示「有其他进程正在访问」，不编造名称。<br>技术依据：macOS 14.2+ CoreAudio 进程对象识别麦克风、IOKit 摄像头 nub 监控（OverSight 思路）。<br>版本已更新为 v0.1.1（build 3）。</div>
+</body></html>

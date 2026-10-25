@@ -1,0 +1,6 @@
+:root{
+  --bg:#1F2927; --card:#2B3833; --mint:#92DBB8; --blue:#85BFEB; --amber:#F5C785; --muted:#A3B5AB;
+  --ink:#EAF2EC; --line:rgba(255,255,255,.08); --faint:#8b9c91;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#141B18;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:22px}

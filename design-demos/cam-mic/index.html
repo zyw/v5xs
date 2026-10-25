@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>v5xs 隐私检测 · 三方向对比</title><style>
+  body{background:#131b19;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC",sans-serif;color:#eaf2ec;padding:28px}
+  h1{font-size:20px;color:#92dbb8;margin:0 0 6px;font-weight:700}
+  .sub{color:#a3b5ab;font-size:13px;margin-bottom:22px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;align-items:start}
+  .card{background:#1f2927;border-radius:16px;padding:14px;opacity:.96}
+  .card img{width:100%;border-radius:12px;display:block;background:#2b3833}
+  .card h2{font-size:15px;color:#eaf2ec;margin:12px 0 6px}
+  .card .tag{font-size:10px;color:#92dbb8;background:rgba(146,219,184,.12);display:inline-block;padding:2px 8px;border-radius:20px;margin-bottom:8px}
+  .card .d{font-size:12px;color:#a3b5ab;line-height:1.7}
+  .foot{margin-top:24px;color:#a3b5ab;font-size:12px;line-height:1.7;border-top:1px solid rgba(255,255,255,.08);padding-top:16px}
+</style></head><body>
+  <h1>隐私 · 摄像头 / 麦克风占用检测 · 三方向</h1>
+  <div class="sub">三种不同骨架的气质；均沿用 v5xs 现有深色卡片语言，绿=相机·橙=麦克风（与 macOS 指示灯一致）</div>
+  <div class="grid">
+    <div class="card"><img src="dir-1.png"><h2>方向一 · 克制单卡</h2><span class="tag">极简 · 一眼开关</span><div class="d">左状态灯+右状态，摄像头为主卡，麦克风/屏幕录制做次级行。<b>胆量：</b>只用一个强调色，其他全部弱化。</div></div>
+    <div class="card"><img src="dir-2.png"><h2>方向二 · 双卡对开</h2><span class="tag">对称 · 信息全</span><div class="d">摄像头/麦克风左右对开两块卡，各带状态+进程+时长，下方「最近占用」时间线。<b>胆量：</b>双设备对称 + 历史记录。</div></div>
+    <div class="card"><img src="dir-3.png"><h2>方向三 · 居中强调</h2><span class="tag">通知式 · 单次强调</span><div class="d">像 macOS 通知一样一次突出一种「设备被访问」，大图标+访问方。<b>胆量：</b>一次只讲一件事，最像 OverSight。</div></div>
+  </div>
+  <div class="foot">诚实边界：识别不到具体 App 时如实显示「有其他进程正在访问」，不编造名称。<br>技术依据见 <a href="product-facts.md" style="color:#85bfeb">product-facts.md</a>（OverSight + CoreAudio 进程对象，macOS 14.2+）。<br>版本已更新为 v0.1.1（build 3）。</div>
+</body></html>

@@ -1,0 +1,37 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><title>v5xs 方向二 · 隐私卡片</title><style>:root{--bg:#1F2927;--card:#2B3833;--mint:#92DBB8;--blue:#85BFEB;--amber:#F5C785;--muted:#A3B5AB;--ink:#EAF2EC;--line:rgba(255,255,255,.08)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#141B18;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;justify-content:center;padding:24px}
+.panel{width:430px;background:var(--bg);border-radius:16px;padding:10px;box-shadow:0 30px 70px rgba(0,0,0,.5);display:flex;flex-direction:column;gap:6px}
+.row{display:flex;gap:7px}.card{flex:1;background:var(--card);border-radius:13px;padding:9px}
+.hr{display:flex;align-items:baseline;gap:6px;font-size:11px;font-weight:600;color:var(--muted)}.hr .sp{margin-left:auto;font-size:9px;color:var(--mint);font-weight:500}
+.metric{display:flex;align-items:center;gap:2px;font-weight:800}.sub{font-size:9px;color:var(--muted);margin-top:2px}
+.bar{height:4px;border-radius:2px;background:rgba(255,255,255,.08);overflow:hidden;margin-top:6px}.bar i{display:block;height:100%;border-radius:2px}.bar.mint i{background:var(--mint)}.bar.blue i{background:var(--blue)}
+.badge{font-size:9px;font-weight:600;padding:2px 7px;border-radius:999px;white-space:nowrap}.badge.mint{background:rgba(146,219,184,.14);color:var(--mint)}.badge.blue{background:rgba(133,191,235,.14);color:var(--blue)}.badge.amber{background:rgba(245,199,133,.15);color:var(--amber)}.badge.gray{background:rgba(255,255,255,.08);color:var(--muted)}
+.spark{height:22px;margin-top:6px;display:flex;align-items:center;gap:2px}.spark i{width:3px;background:var(--mint);border-radius:1px;opacity:.9}.spark.blue i{background:var(--blue)}
+.frow{display:flex;justify-content:space-between;align-items:center;padding:2px 6px;font-size:10px;color:var(--muted)}
+.priv{background:var(--card);border-radius:13px;padding:10px;display:flex;align-items:center;gap:12px}
+.priv .bj{width:34px;height:34px;border-radius:10px;background:rgba(146,219,184,.12);display:grid;place-items:center;font-size:16px;color:var(--mint);flex:none}
+.priv .tt{font-size:11px;color:var(--ink);font-weight:600;display:flex;align-items:center;gap:6px}
+.priv .tt .dotg{width:7px;height:7px;border-radius:50%;background:var(--mint);box-shadow:0 0 6px var(--mint);animation:p 2s infinite}
+.priv .tt .doto{width:7px;height:7px;border-radius:50%;background:var(--amber);box-shadow:0 0 6px var(--amber)}
+@keyframes p{0%,100%{opacity:1}50%{opacity:.5}}
+.priv .st{font-size:9px;color:var(--muted);margin-top:3px}
+.priv .r{display:flex;align-items:center;gap:8px;font-size:10px;color:var(--muted)}
+.priv .r b{color:var(--ink);font-weight:600;font-size:10px}
+.priv .r .v{font-size:11px;font-weight:700}.priv .r .v.g{color:var(--mint)}.priv .r .v.o{color:var(--amber)}.priv .r .v.d{color:var(--muted)}
+.priv .sp2{flex:1}
+</style></head><body><div class="panel">
+  <div class="row" style="align-items:flex-start;padding:2px 5px">
+    <div style="font-size:24px;color:var(--amber)">☀</div><div style="font-size:34px;font-weight:800;line-height:.9">100</div><div style="font-size:13px;color:var(--muted);font-weight:600;margin-top:2px">极佳</div><div style="margin-left:auto;display:flex;flex-direction:column;align-items:flex-end;gap:4px">
+      <span class="badge amber">● 麦克风</span><span class="badge mint">● 摄像头</span></div>
+  </div>
+  <div class="row" style="padding:0 5px;gap:5px;flex-wrap:wrap"><span class="badge gray">M2</span><span class="badge gray">16 GB</span><span class="badge gray">macOS 26.4</span><span class="badge gray">已运行 6天 9小时</span></div>
+  <div class="row"><div class="card"><div class="hr">CPU<span class="sp">8 核 · 4P + 4E</span></div><div class="metric" style="margin-top:8px;font-size:25px">23<small style="color:var(--muted);font-size:11px">%</small></div><div class="spark"><i style="height:4px"></i><i style="height:5px"></i><i style="height:6px"></i><i style="height:5px"></i><i style="height:6px"></i><i style="height:8px"></i><i style="height:6px"></i></div></div>
+    <div class="card"><div class="hr">GPU 活跃度<span class="sp">8 核</span></div><div class="metric" style="margin-top:8px;font-size:25px;color:var(--blue)">87<small style="color:var(--muted);font-size:11px">%</small></div><div class="spark blue"><i style="height:7px"></i><i style="height:5px"></i><i style="height:5px"></i><i style="height:8px"></i><i style="height:9px"></i><i style="height:7px"></i><i style="height:9px"></i></div></div></div>
+  <div class="row"><div class="card"><div class="hr">内存</div><div class="metric" style="margin-top:8px;font-size:19px">12.05<small style="color:var(--muted);font-size:11px"> GB</small></div><div class="bar mint"><i style="width:75%"></i></div><div class="sub">总计 16 GB</div></div>
+    <div class="card"><div class="hr">可用空间<span class="sp">总计 245.11 GB</span></div><div class="metric" style="margin-top:8px;font-size:19px;color:var(--blue)">23.11<small style="color:var(--muted);font-size:11px"> GB</small></div><div class="bar blue"><i style="width:54%"></i></div><div class="sub">读 872 KB/s · 写 196 KB/s</div></div></div>  <div class="priv">
+    <div class="bj">◉</div>
+    <div><div class="tt"><span class="dotg"></span>摄像头 <span style="margin:0 3px">·</span> <span class="doto"></span>麦克风</div><div class="st">微信 · 正在使用</div></div>
+    <div class="sp2"></div>
+    <div><div class="r"><span>相机</span><span class="v g">使用中</span></div><div class="r" style="margin-top:5px"><span>麦克风</span><span class="v o">使用中</span></div></div>
+  </div>  <div class="frow" style="border-top:1px solid var(--line);padding-top:6px"><span>设置</span><span>v0.1.1 · 每秒更新</span><span>退出</span></div></div></body></html>

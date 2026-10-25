@@ -57,10 +57,16 @@ final class MonitorStore: ObservableObject {
     @Published var appCacheDays: Double {
         didSet { AppListCacheSetting.set(appCacheDays) }
     }
+    /// 摄像头 / 麦克风占用状态（用于面板里的「隐私」条）。
+    @Published var micInUse = false
+    @Published var micProcess: String?
+    @Published var camInUse = false
+    @Published var camProcess: String?
 
     let machine = MachineDetails()
     private let sampler = SystemSampler()
     private let bluetoothMonitor = BluetoothBatteryMonitor()
+    private let privacyMonitor = PrivacyMonitor()
     private var reportedPeripherals: [PeripheralBattery] = []
     private var blePeripherals: [PeripheralBattery] = []
     private var timer: Timer?
@@ -113,6 +119,14 @@ final class MonitorStore: ObservableObject {
             self?.updatePeripherals()
         }
         bluetoothMonitor.start()
+        privacyMonitor.onUpdate = { [weak self] status in
+            guard let self else { return }
+            self.micInUse = status.micInUse
+            self.micProcess = status.micProcess
+            self.camInUse = status.camInUse
+            self.camProcess = status.camProcess
+        }
+        refreshPrivacy()
         sample()
         configureTimer()
         pathMonitor.pathUpdateHandler = { [weak self] path in
@@ -146,6 +160,14 @@ final class MonitorStore: ObservableObject {
         timer = nil
         pathMonitor.cancel()
         bluetoothMonitor.onUpdate = nil
+        privacyMonitor.onUpdate = nil
+    }
+
+    /// 隐私状态轮询（CoreAudio 进程对象，比 1s 采样更重，降低到 5s）。
+    private func refreshPrivacy() {
+        DispatchQueue.global(qos: .utility).async { [weak self] in
+            self?.privacyMonitor.refresh()
+        }
     }
 
     private func sample() {
@@ -184,6 +206,7 @@ final class MonitorStore: ObservableObject {
         }
         if let lastSlowSample, now.timeIntervalSince(lastSlowSample) < 15 { return }
         lastSlowSample = now
+        refreshPrivacy()
         let temperatures = SystemSampler.temperatures()
         cpuTemperature = temperatures.cpu
         gpuTemperature = temperatures.gpu

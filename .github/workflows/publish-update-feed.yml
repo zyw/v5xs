@@ -42,4 +42,5 @@ jobs:
           echo "已上传 update.json 到 Release $latest"
 
       - name: Show feed URL
-        run: echo "客户端订阅: https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/update.json"
+        run: |
+          echo "客户端订阅: https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/update.json"

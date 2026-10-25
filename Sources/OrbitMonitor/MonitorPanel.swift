@@ -39,6 +39,7 @@ struct MonitorPanel: View {
                 thermalCard
             }
             batteryCard
+            privacyStrip
             processCard
             HStack {
                 Button("设置", action: onOpenSettings)
@@ -280,6 +281,41 @@ struct MonitorPanel: View {
         .panel()
     }
 
+    /// 隐私条（方向三）：摄像头 / 麦克风占用状态，夹在「电量」与「高占用进程」之间。
+    private var privacyStrip: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "hand.raised.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Palette.mint)
+                .frame(width: 30, height: 30)
+                .background(Palette.mint.opacity(0.12), in: RoundedRectangle(cornerRadius: 9))
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Circle().fill(store.camInUse ? Palette.blue : Color.white.opacity(0.22)).frame(width: 7, height: 7)
+                    Text("摄像头").font(.system(size: 11, weight: .semibold)).foregroundStyle(store.camInUse ? Palette.blue : Palette.muted)
+                }
+                Text(store.camInUse ? (store.camProcess ?? "有其他进程在访问") : "空闲")
+                    .font(.system(size: 9)).foregroundStyle(Palette.muted)
+            }
+            Rectangle().fill(Color.white.opacity(0.1)).frame(width: 1, height: 30)
+            VStack(alignment: .leading, spacing: 3) {
+                HStack(spacing: 8) {
+                    Circle().fill(store.micInUse ? Palette.amber : Color.white.opacity(0.22)).frame(width: 7, height: 7)
+                    Text("麦克风").font(.system(size: 11, weight: .semibold)).foregroundStyle(store.micInUse ? Palette.amber : Palette.muted)
+                }
+                Text(store.micInUse ? (store.micProcess ?? "有其他进程在访问") : "空闲")
+                    .font(.system(size: 9)).foregroundStyle(Palette.muted)
+            }
+            Spacer(minLength: 4)
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(store.camInUse ? "相机在用" : "相机空闲").foregroundStyle(store.camInUse ? Palette.blue : Palette.muted)
+                Text(store.micInUse ? "麦克风在用" : "麦克风空闲").foregroundStyle(store.micInUse ? Palette.amber : Palette.muted)
+            }
+            .font(.system(size: 10, weight: .semibold))
+        }
+        .padding(11)
+        .background(Palette.card, in: RoundedRectangle(cornerRadius: 12))
+    }
     private var batteryCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {

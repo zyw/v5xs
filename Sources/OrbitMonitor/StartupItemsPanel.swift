@@ -201,17 +201,103 @@ enum StartupScanner {
     }
 }
 
+
+// MARK: - 启动项缓存（与卸载页逻辑一致：读缓存，无缓存才自动扫描）
+
+/// 启动项缓存条目：与 StartupItem 对应的可编码数据。
+private struct StartupEntry: Codable {
+    var id: String
+    var name: String
+    var detail: String
+    var path: String
+    var bundleIdentifier: String?
+    var source: String
+    var enabled: Bool
+    var executablePath: String
+
+    init(_ item: StartupItem) {
+        id = item.id; name = item.name; detail = item.detail; path = item.path
+        bundleIdentifier = item.bundleIdentifier
+        switch item.source {
+        case .loginItem: source = "loginItem"
+        case .userAgent: source = "userAgent"
+        case .systemAgent: source = "systemAgent"
+        case .daemon: source = "daemon"
+        }
+        enabled = item.enabled; executablePath = item.executablePath
+    }
+
+    var startupItem: StartupItem {
+        let src: StartupItem.Source
+        switch source {
+        case "userAgent": src = .userAgent
+        case "systemAgent": src = .systemAgent
+        case "daemon": src = .daemon
+        default: src = .loginItem
+        }
+        return StartupItem(id: id, name: name, detail: detail, path: path,
+                           bundleIdentifier: bundleIdentifier, source: src,
+                           enabled: enabled, executablePath: executablePath)
+    }
+}
+
+private struct StartupCacheEntry: Codable {
+    var savedAt: Date
+    var items: [StartupEntry]
+}
+
+private enum StartupCache {
+    private static let fileName = "startup-items.json"
+
+    private static var fileURL: URL? {
+        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+        return support?.appendingPathComponent(fileName)
+    }
+
+    static func load() -> [StartupItem]? {
+        guard let url = fileURL,
+              let data = try? Data(contentsOf: url),
+              let entry = try? JSONDecoder().decode(StartupCacheEntry.self, from: data) else { return nil }
+        guard Date().timeIntervalSince(entry.savedAt) <= AppListCacheSetting.seconds else { return nil }
+        return entry.items.map { $0.startupItem }
+    }
+
+    static func save(_ items: [StartupItem]) {
+        guard let url = fileURL else { return }
+        let entry = StartupCacheEntry(savedAt: Date(), items: items.map(StartupEntry.init))
+        if let data = try? JSONEncoder().encode(entry) {
+            try? data.write(to: url, options: [.atomic])
+        }
+    }
+}
+
 @MainActor
 private final class StartupModel: ObservableObject {
     @Published var items: [StartupItem] = []
     @Published var loading = false
     @Published var error: String?
 
+    /// 加载启动项：与卸载页一致——优先读缓存，只有无缓存时才自动重新扫描。
     func load() {
         guard !loading else { return }
+        if let cached = StartupCache.load(), !cached.isEmpty {
+            items = cached
+            return
+        }
+        scanAndCache()
+    }
+
+    /// 手动刷新：总是重新扫描并更新缓存。
+    func refresh() {
+        guard !loading else { return }
+        scanAndCache()
+    }
+
+    private func scanAndCache() {
         loading = true
         Task {
             let result = await Task.detached(priority: .userInitiated) { StartupScanner.scan() }.value
+            StartupCache.save(result)
             items = result
             loading = false
         }
@@ -262,6 +348,7 @@ private final class StartupModel: ObservableObject {
 struct StartupItemsPanel: View {
     @StateObject private var model = StartupModel()
     @State private var query = ""
+    @State private var refreshSucceeded = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -290,8 +377,51 @@ struct StartupItemsPanel: View {
             statCard(title: "需权限", value: "\(systemCount)", unit: "系统代理 / 守护", color: .amber)
             Spacer()
             searchField
+            refreshButton
         }
         .padding(.horizontal, 24).padding(.vertical, 14)
+    }
+
+    /// 启动项刷新按钮：loading 时显示加载指示器；点击重新扫描（手动刷新绕过节流）。
+    private var refreshButton: some View {
+        Button {
+            model.refresh()
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 9)
+                    .fill(UninstallStyle.card)
+                RoundedRectangle(cornerRadius: 9)
+                    .stroke(model.loading ? UninstallStyle.mint.opacity(0.6) : UninstallStyle.line, lineWidth: 1)
+                if model.loading {
+                    ProgressView().controlSize(.small)
+                        .tint(UninstallStyle.mint)
+                } else if refreshSucceeded {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(UninstallStyle.mint)
+                } else {
+                    Image(systemName: "arrow.clockwise")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(UninstallStyle.faint)
+                }
+            }
+            .frame(width: 32, height: 32)
+            .contentShape(RoundedRectangle(cornerRadius: 9))
+        }
+        .buttonStyle(.plain)
+        .disabled(model.loading)
+        .onChange(of: model.loading) { _, loading in
+            if loading {
+                refreshSucceeded = false
+            } else if model.items.count > 0 {
+                refreshSucceeded = true
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_200_000_000)
+                    refreshSucceeded = false
+                }
+            }
+        }
+        .help(model.loading ? "正在扫描…" : "重新扫描启动项")
     }
 
     private var enabledCount: Int { model.items.filter { $0.enabled }.count }

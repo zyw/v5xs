@@ -457,7 +457,6 @@ struct UninstallerPanel: View {
     @FocusState private var searchFocused: Bool
     @State private var refreshTurns = 0
     @State private var refreshSucceeded = false
-    @State private var refreshSpinning = false
 
     private var displayed: [InstalledApp] {
         model.apps.filter { query.isEmpty || $0.name.localizedCaseInsensitiveContains(query) }
@@ -530,16 +529,16 @@ struct UninstallerPanel: View {
             Spacer()
             HStack(spacing: 2) {
                 ForEach(UninstallerTab.allCases, id: \.self) { tab in
-                    Button {
-                        activeTab = tab
-                    } label: {
-                        Text(tab.title)
-                            .font(.system(size: 12.5, weight: .semibold))
-                            .foregroundStyle(activeTab == tab ? Color(red: 0.918, green: 0.969, blue: 0.933) : UninstallStyle.muted)
-                            .padding(.horizontal, 18).padding(.vertical, 7)
-                            .background(activeTab == tab ? Color(red: 0.210, green: 0.294, blue: 0.247) : .clear, in: RoundedRectangle(cornerRadius: 9))
-                    }
-                    .buttonStyle(.plain)
+                    // 不用 Button(.plain)：在 macOS 上它的命中区只会缩到文字；
+                    // 改用 Text + contentShape + onTapGesture，让整块圆角 pill 都可点。
+                    Text(tab.title)
+                        .font(.system(size: 12.5, weight: .semibold))
+                        .foregroundStyle(activeTab == tab ? Color(red: 0.918, green: 0.969, blue: 0.933) : UninstallStyle.muted)
+                        .padding(.horizontal, 18).padding(.vertical, 7)
+                        .background(activeTab == tab ? Color(red: 0.210, green: 0.294, blue: 0.247) : .clear, in: RoundedRectangle(cornerRadius: 9))
+                        .contentShape(RoundedRectangle(cornerRadius: 9))
+                        .onTapGesture { activeTab = tab }
+                        .animation(.easeOut(duration: 0.12), value: activeTab)
                 }
             }
             .padding(3).background(Color(red: 0.125, green: 0.177, blue: 0.153), in: RoundedRectangle(cornerRadius: 12))
@@ -666,7 +665,8 @@ struct UninstallerPanel: View {
         .animation(.easeOut(duration: 0.12), value: query.isEmpty)
     }
 
-    /// 刷新按钮：点击立即旋转，扫描期间持续转动，完成后短暂显示勾选。
+    /// 刷新按钮：点击后进入 loading 状态（进度指示器），扫描完成恢复。
+    /// 区别于旧的"图标旋转"：loading 时用标准的加载指示器表达"正在扫描"。
     private var refreshButton: some View {
         Button {
             refreshTurns += 2
@@ -677,7 +677,10 @@ struct UninstallerPanel: View {
                     .fill(UninstallStyle.card)
                 RoundedRectangle(cornerRadius: 9)
                     .stroke(model.loading ? UninstallStyle.mint.opacity(0.6) : UninstallStyle.line, lineWidth: 1)
-                if refreshSucceeded {
+                if model.loading {
+                    ProgressView().controlSize(.small)
+                        .tint(UninstallStyle.mint)
+                } else if refreshSucceeded {
                     Image(systemName: "checkmark")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(UninstallStyle.mint)
@@ -685,9 +688,7 @@ struct UninstallerPanel: View {
                 } else {
                     Image(systemName: "arrow.clockwise")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(model.loading ? UninstallStyle.mint : UninstallStyle.faint)
-                        .rotationEffect(.degrees(refreshSpinning ? 360 : 0))
-                        .animation(model.loading ? .linear(duration: 0.8).repeatForever(autoreverses: false) : .default, value: refreshSpinning)
+                        .foregroundStyle(UninstallStyle.faint)
                 }
             }
             .frame(width: 32, height: 32)
@@ -695,22 +696,15 @@ struct UninstallerPanel: View {
         }
         .buttonStyle(.plain)
         .disabled(model.loading)
-        .animation(.easeInOut(duration: 0.45), value: refreshTurns)
         .animation(.easeInOut(duration: 0.25), value: refreshSucceeded)
         .onChange(of: model.loading) { _, loading in
             if loading {
                 refreshSucceeded = false
-                withAnimation(.linear(duration: 0.8).repeatForever(autoreverses: false)) {
-                    refreshSpinning = true
-                }
-            } else {
-                refreshSpinning = false
-                if refreshTurns > 0 {
-                    refreshSucceeded = true
-                    Task {
-                        try? await Task.sleep(nanoseconds: 1_400_000_000)
-                        refreshSucceeded = false
-                    }
+            } else if refreshTurns > 0 {
+                refreshSucceeded = true
+                Task {
+                    try? await Task.sleep(nanoseconds: 1_200_000_000)
+                    refreshSucceeded = false
                 }
             }
         }

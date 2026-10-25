@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v5xs · 隐私 · 方向一</title>
+<style>
+  :root{
+    --bg:#1f2927; --card:#2b3833; --mint:#92dbb8; --blue:#85bfeb; --amber:#f5c785; --muted:#a3b5ab;
+    --text:#eaf2ec; --line:rgba(255,255,255,.08);
+    --r-lg:13px; --r-md:12px; --r-sm:5px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","PingFang SC","Helvetica Neue",sans-serif;color:var(--text);-webkit-font-smoothing:antialiased}
+  .pop{width:360px;margin:0 auto;padding:14px;background:var(--bg);border-radius:16px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+  .head{display:flex;align-items:center;gap:8px;padding:4px 2px 12px;font-size:13px;font-weight:600;color:var(--muted)}
+  .head .dotg{width:8px;height:8px;border-radius:50%;background:var(--mint);box-shadow:0 0 8px var(--mint);animation:pulseg 2.2s infinite}
+  .head span:last-child{margin-left:auto;font-size:10px;color:var(--muted);font-weight:400}
+  @keyframes pulseg{0%,100%{box-shadow:0 0 4px var(--mint)}50%{box-shadow:0 0 12px var(--mint)}}
+  .card{background:var(--card);border-radius:var(--r-lg);padding:16px;display:flex;align-items:center;gap:16px}
+  .status{flex:0 0 88px;text-align:center}
+  .status .ring{width:86px;height:86px;border-radius:50%;border:3px solid rgba(255,255,255,.12);position:relative;display:flex;align-items:center;justify-content:center;margin:0 auto}
+  .status .ring .inner{font-size:15px;font-weight:600;color:var(--mint)}
+  .status .lab{font-size:11px;color:var(--muted);margin-top:8px}
+  .info{flex:1;min-width:0}
+  .info .state{font-size:20px;font-weight:700;letter-spacing:.5px;color:var(--mint)}
+  .info .state.amber{color:var(--amber)}
+  .info .proc{font-size:13px;color:var(--text);margin-top:6px;display:flex;align-items:center;gap:6px}
+  .info .proc .icon{width:22px;height:22px;border-radius:6px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:12px}
+  .info .since{font-size:11px;color:var(--muted);margin-top:8px}
+  .sep{height:1px;background:var(--line);margin:14px 2px}
+  .row{display:flex;align-items:center;gap:10px;padding:2px 2px}
+  .row .d{width:8px;height:8px;border-radius:50%}
+  .row .d.on{background:var(--amber);box-shadow:0 0 6px var(--amber)}
+  .row .d.off{background:rgba(255,255,255,.18)}
+  .row .n{width:180px;font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row .t{margin-left:auto;font-size:11px;color:var(--muted)}
+  .foot{display:flex;align-items:center;gap:6px;margin-top:14px;font-size:10px;color:var(--muted)}
+  .foot .dotg{width:6px;height:6px;border-radius:50%;background:var(--mint)}
+  .foot .doto{width:6px;height:6px;border-radius:50%;background:var(--amber)}
+</style>
+</head>
+<body>
+<div class="pop">
+  <div class="head"><span class="dotg"></span> 隐私 · 占用检测 <span>正在看守</span></div>
+  <div class="card">
+    <div class="status">
+      <div class="ring"><div class="inner">●</div></div>
+      <div class="lab">摄像头</div>
+    </div>
+    <div class="info">
+      <div class="state">使用中</div>
+      <div class="proc"><span class="icon">📷</span> 微信</div>
+      <div class="since">已占用 4 分 12 秒</div>
+    </div>
+  </div>
+  <div class="sep"></div>
+  <div class="row"><span class="d on"></span><span class="n">麦克风</span><span class="t">使用中 · 微信</span></div>
+  <div class="row"><span class="d off"></span><span class="n">屏幕录制</span><span class="t">未使用</span></div>
+  <div class="foot"><span class="dotg"></span>相机在用 &nbsp;<span class="doto"></span>麦克风在用 · 与 macOS 指示灯一致</div>
+</div>
+</body>
+</html>
