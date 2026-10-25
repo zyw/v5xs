@@ -15,7 +15,7 @@
 | `scripts/build-dmg.sh` | 打包 `dist/v5xs-<version>-<OS>-<arch>.dmg`（需要 `uv` 与网络） | 是 |
 | `scripts/make-update-manifest.sh` | 生成 `dist/update.json` | 是 |
 | `dist/v5xs.app`、`dist/*.dmg` | 构建产物 | 否（`dist/` 已被 `.gitignore` 忽略） |
-| `dist/update.json` | 更新清单；作为 **GitHub Releases 附件**托管的为主，仓库内 `dist/update.json` 为备选（raw.github） | 是（提交仓库内的那份，Relases 附件由发版流程/CI 上传） |
+| `dist/update.json` | 更新清单；作为 **GitHub Releases 附件**托管（主方式）。由 `publish-update-feed.yml` 在发版时从 Release 里的真实 DMG 现算并上传 | 否（`dist/` 整体被 `.gitignore` 忽略，不入库） |
 
 ## 二、清单格式（客户端契约）
 
@@ -163,20 +163,29 @@ bash scripts/make-update-manifest.sh \
   --notes docs/release-notes/$version.md \
   --out dist/update.json
 
-# 2) 只是仓库内留一份备选（可选，供 raw.github 方式）；dist/ 在 .gitignore 里需 -f
-git add -f dist/update.json && git commit -m "release: update.json for $tag" && git push github main
-
-# 3) 创建 Release，同时上传 DMG 与 update.json 附件
-gh release create "$tag" dist/v5xs-*.dmg dist/update.json \
+# 2) 创建 Release，先只上传 DMG 附件
+gh release create "$tag" dist/v5xs-*.dmg \
   --title "v5xs $version" --notes-file docs/release-notes/$version.md
 
-# 推 tag（GitHub Actions 只在 github 远端触发）用显式远端：
+# 3) 推 tag（GitHub Actions 只在 github 远端触发）用显式远端：
 git push github "$tag"
 ```
 
-> 也可把第 3 步自动化为 [.github/workflows/publish-update-feed.yml](../.github/workflows/publish-update-feed.yml)。
-> **注意**：该工作流在 push `v*` tag 时触发，因此 tag 必须推到 `github`（GitHub.com），
-> 不能只推到 `origin`——OneDev 不会运行 GitHub Actions。
+> **清单由 CI 生成，不要手动提交 `dist/update.json`。** `dist/` 整个目录在 `.gitignore` 里，
+> 仓库里本来就没有这个文件；而且清单必须与 Release 里真实存在的 DMG 逐字节对应
+> （`size` / `sha256` / `url`），每次发版都得重算，提交一份静态清单只会变成过期数据。
+>
+> [.github/workflows/publish-update-feed.yml](../.github/workflows/publish-update-feed.yml) 会在
+> **push `v*` tag / 发布 Release / 手动触发**时执行：解析目标 Release → 下载其中的 DMG 附件 →
+> 用 `make-update-manifest.sh` 现算 `update.json`（版本号取自 tag，`build`/`minimumSystemVersion`
+> 取自 `Resources/Info.plist`，`notes` 取自 Release 正文）→ 作为附件上传 → 校验线上内容。
+>
+> 前提：**目标 Release 必须已经挂上该版本的 DMG**。缺 DMG 时工作流会直接失败并提示上传命令，
+> 不会写出一个指向 404 的清单。因此顺序是「先建 Release 并上传 DMG，再推 tag」。
+>
+> **注意**：tag 必须推到 `github`（GitHub.com），不能只推到 `origin`——OneDev 不会运行 GitHub Actions。
+> 另外该工作流跑在 `macos-latest` 上：清单脚本依赖 `stat -f%z` / `shasum` / `plutil` 等 macOS 工具，
+> 在 ubuntu 上 `stat` 语义不同，会算出错误的文件大小。
 
 要点：
 

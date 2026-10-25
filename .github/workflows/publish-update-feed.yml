@@ -1,46 +1,207 @@
-# 在每次发布（打到 v* tag，或手动运行）后，把 dist/update.json 作为
-# GitHub Releases 附件上传到最新 Release，供客户端通过
+# 发布更新清单（update.json）到 GitHub Releases。
+#
+# 触发：推送 v* tag、发布 Release、或手动运行（Actions → Run workflow）。
+# 产物：把 update.json 作为附件挂到目标 Release，客户端通过
 #   https://github.com/<owner>/<repo>/releases/latest/download/update.json
 # 拉取（见 Resources/Info.plist 的 V5XSUpdateFeedURL）。
 #
-# 前提：dist/update.json 已由 make-update-manifest.sh 生成并提交，且目标 Release 已存在
-#       （通常由你的发版流程创建并上传 DMG）。
+# 为什么在 CI 现算清单，而不是读取已提交的 dist/update.json：
+#   dist/ 整个目录在 .gitignore 里，dist/update.json 无法随仓库分发；
+#   而且清单必须与 Release 里真实存在的 DMG 逐字节对应（size / sha256 / url），
+#   每次发版重新生成才不会变成过期数据。这里直接下载目标 Release 的 DMG 附件，
+#   用 scripts/make-update-manifest.sh（客户端契约的唯一实现）现算清单。
+#
+# 前提：目标 Release 已存在，且已挂上该版本的 DMG 附件。
+#       缺 DMG 时工作流会失败并提示上传命令，不会写出一个指向 404 的清单。
+
 name: Publish update feed
 
 on:
   push:
     tags:
       - "v*"
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "目标 Release tag（如 v0.1.1）；留空则使用最新 Release"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+# 同一时间只允许一个发版写清单：latest 是单一入口，避免两个版本互相覆盖。
+concurrency:
+  group: publish-update-feed
+  cancel-in-progress: false
 
 jobs:
-  upload-feed:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
+  publish-feed:
+    # make-update-manifest.sh 依赖 macOS 自带工具（PlistBuddy / plutil / stat -f / shasum），
+    # 在 ubuntu 上 stat -f 语义不同会算出错误大小，故必须用 macOS runner。
+    runs-on: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure update.json exists
-        run: |
-          if [ ! -f dist/update.json ]; then
-            echo "dist/update.json 缺失：请在本地先生成并提交（make-update-manifest.sh）。" >&2
-            exit 1
-          fi
-
-      - name: Upload update.json to latest release
+      - name: Resolve target release
+        id: release
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_RELEASE_TAG: ${{ github.event.release.tag_name }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          latest=$(gh release view --json tagName -q .tagName 2>/dev/null || echo "")
-          if [ -z "$latest" ]; then
-            echo "没有找到任何 Release，请先创建 Release 并上传 DMG。" >&2
+          set -euo pipefail
+
+          # tag 来源优先级：release 事件 > tag push > 手动输入 > 最新 Release
+          tag="$EVENT_RELEASE_TAG"
+          if [ -z "$tag" ] && [ "$EVENT_NAME" = "push" ]; then
+            tag="$REF_NAME"
+          fi
+          if [ -z "$tag" ]; then
+            tag="$INPUT_TAG"
+          fi
+          if [ -z "$tag" ]; then
+            tag="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+            echo "未指定 tag，使用最新 Release: $tag"
+          fi
+
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json tagName >/dev/null 2>&1; then
+            echo "Release '$tag' 不存在。" >&2
+            echo "请先创建 Release 并上传 DMG：" >&2
+            echo "  gh release create '$tag' dist/v5xs-*.dmg --title 'v5xs $tag' --notes-file docs/release-notes/<version>.md" >&2
             exit 1
           fi
-          gh release upload "$latest" dist/update.json --clobber
-          echo "已上传 update.json 到 Release $latest"
 
-      - name: Show feed URL
+          assets="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json assets -q '.assets[].name')"
+          echo "Release $tag 的附件："
+          printf '%s\n' "$assets" | sed 's/^/  - /'
+
+          if ! printf '%s\n' "$assets" | grep -qi '\.dmg$'; then
+            echo "Release '$tag' 没有 DMG 附件，无法生成清单（否则清单会指向 404）。" >&2
+            echo "请先上传安装包：" >&2
+            echo "  gh release upload '$tag' dist/*.dmg --clobber" >&2
+            exit 1
+          fi
+
+          # 版本号以 tag 为准（tag 与 version 必须一致，见 docs/update-publish.md）
+          version="${tag#v}"
+          if ! printf '%s' "$version" | grep -Eq '^[0-9]+(\.[0-9]+)*$'; then
+            echo "tag '$tag' 不是 v<version> 形式，无法推导 version。" >&2
+            exit 1
+          fi
+
+          published_at="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json publishedAt -q .publishedAt)"
+          if [ -z "$published_at" ] || [ "$published_at" = "null" ]; then
+            published_at="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+          fi
+
+          is_draft="$(gh release view "$tag" --repo "$GITHUB_REPOSITORY" --json isDraft -q .isDraft)"
+          if [ "$is_draft" = "true" ]; then
+            echo "警告: '$tag' 是 draft Release，客户端拉不到它；发布后需重跑本工作流。" >&2
+          fi
+
+          echo "tag=$tag version=$version publishedAt=$published_at draft=$is_draft"
+          {
+            echo "tag=$tag"
+            echo "version=$version"
+            echo "published_at=$published_at"
+            echo "is_draft=$is_draft"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Download DMG assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
         run: |
-          echo "客户端订阅: https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/update.json"
+          set -euo pipefail
+          mkdir -p dist
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.dmg' --dir dist
+          ls -l dist
+
+      - name: Generate update.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          VERSION: ${{ steps.release.outputs.version }}
+          PUBLISHED_AT: ${{ steps.release.outputs.published_at }}
+        run: |
+          set -euo pipefail
+
+          # 清单脚本要求 .app 里有 Contents/Info.plist；CI 不构建 App，
+          # 用源码 Resources/Info.plist 组装一个最小骨架来喂版本信息。
+          app_dir="$(mktemp -d)/v5xs.app"
+          mkdir -p "$app_dir/Contents"
+          cp Resources/Info.plist "$app_dir/Contents/Info.plist"
+
+          build="$(plutil -extract CFBundleVersion raw -o - Resources/Info.plist)"
+          min_system="$(plutil -extract LSMinimumSystemVersion raw -o - Resources/Info.plist 2>/dev/null || printf '14.0')"
+          plist_version="$(plutil -extract CFBundleShortVersionString raw -o - Resources/Info.plist 2>/dev/null || printf '')"
+
+          if [ -n "$plist_version" ] && [ "$plist_version" != "$VERSION" ]; then
+            echo "警告: tag $TAG 推导出的版本 $VERSION 与 Resources/Info.plist ($plist_version) 不一致。" >&2
+            echo "清单以 tag 为准；请确认该 tag 指向的提交已更新版本号。" >&2
+          fi
+
+          notes_file="$(mktemp)"
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body -q .body > "$notes_file"
+
+          bash scripts/make-update-manifest.sh \
+            --app "$app_dir" \
+            --dmg-dir dist \
+            --out dist/update.json \
+            --version "$VERSION" \
+            --build "$build" \
+            --minimum-system "$min_system" \
+            --published-at "$PUBLISHED_AT" \
+            --notes "$notes_file"
+
+          echo '--- dist/update.json ---'
+          cat dist/update.json
+
+      - name: Upload update.json to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release upload "$TAG" dist/update.json --clobber --repo "$GITHUB_REPOSITORY"
+          echo "已上传 update.json 到 Release $TAG"
+
+      - name: Verify feed
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.release.outputs.tag }}
+          IS_DRAFT: ${{ steps.release.outputs.is_draft }}
+        run: |
+          set -euo pipefail
+
+          if [ "$IS_DRAFT" = "true" ]; then
+            echo "draft Release 的附件不对外公开，跳过线上校验。"
+            exit 0
+          fi
+
+          asset_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/update.json"
+          echo "校验附件地址: $asset_url"
+          curl -fsSL "$asset_url" -o /tmp/remote-update.json
+          if ! diff -u <(plutil -p dist/update.json) <(plutil -p /tmp/remote-update.json); then
+            echo "线上附件与本地生成的清单不一致。" >&2
+            exit 1
+          fi
+          echo "Release 附件校验通过。"
+
+          latest="$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)"
+          feed="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/update.json"
+          if [ "$latest" = "$TAG" ]; then
+            echo "校验客户端 feed: $feed"
+            curl -fsSL "$feed" -o /tmp/feed.json
+            diff -u <(plutil -p dist/update.json) <(plutil -p /tmp/feed.json)
+            echo "feed 校验通过，客户端可拉到 $TAG 的清单。"
+          else
+            echo "注意：${TAG} 不是当前最新 Release（最新为 ${latest}），"
+            echo "$feed 仍指向 $latest 的清单，属预期行为。"
+          fi
