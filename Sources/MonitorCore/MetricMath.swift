@@ -242,6 +242,14 @@ public struct PeripheralBattery: Identifiable, Sendable {
 }
 
 public enum ProcessIdentity {
+    /// 判断「当前 pid 上的进程」是否仍是最初展示给用户的那个进程。
+    ///
+    /// - `expectedPath` / `observedPath` 必须是**完整可执行路径**（`proc_pidpath`），
+    ///   不要传 `ps -o comm=`：内核 `p_comm` 只有 `MAXCOMLEN`(16) 字节，长路径会被截断，
+    ///   与完整路径永不相等，导致所有操作都被判为「进程已不存在」。
+    /// - `expectedStart` / `observedStart` 必须是**不随本地化/时区变化**的启动时间
+    ///   （本仓库统一用 epoch 秒字符串），避免 `ps lstart` 的本地化文本在不同
+    ///   locale / 时区下格式不一致而误判。
     public static func matches(expectedPath: String, expectedStart: String, observedPath: String?, observedStart: String?) -> Bool {
         guard let observedPath, let observedStart,
               !expectedPath.isEmpty, !expectedStart.isEmpty else { return false }

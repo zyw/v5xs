@@ -10,6 +10,11 @@ private enum Palette {
     static let blue = Color(red: 0.52, green: 0.75, blue: 0.92)
     static let amber = Color(red: 0.96, green: 0.78, blue: 0.52)
     static let muted = Color(red: 0.64, green: 0.71, blue: 0.67)
+    /// 进程榜正文用的暗色：比 muted 明显下沉，避免列表在深色卡片上过于抢眼，
+    /// 但仍与卡片底色保持 4.66:1 对比度（WCAG AA 小字下限），不至于看不清。
+    static let dim = Color(red: 0.58, green: 0.64, blue: 0.61)
+    /// 鼠标经过进程行时的行底色（叠加在卡片上的一点提亮）。
+    static let rowHover = Color.white.opacity(0.07)
 }
 
 struct MonitorPanel: View {
@@ -326,7 +331,9 @@ struct MonitorPanel: View {
                     .foregroundStyle(Palette.muted)
             }
             Divider().overlay(.white.opacity(0.1))
-            HStack(spacing: 10) {
+            // 垂直居中：两个电量环与左侧 MacBook 区块按中心线对齐，
+            // 间距固定 14pt，避免环体缩小后挤在一起。
+            HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("MacBook").font(.system(size: 10)).foregroundStyle(Palette.muted)
                     Text(store.batteryPercentage.map { "\($0)%" } ?? "—")
@@ -334,10 +341,18 @@ struct MonitorPanel: View {
                     Text(store.batteryStatus).font(.system(size: 9)).foregroundStyle(Palette.muted)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                Divider().frame(height: 48)
-                BatteryRing(symbol: "magicmouse.fill", name: "鼠标", percentage: peripheral(kind: .mouse)?.percentage)
-                BatteryRing(symbol: "keyboard.fill", name: "键盘", percentage: peripheral(kind: .keyboard)?.percentage)
+                Divider().frame(height: 44)
+                HStack(spacing: 14) {
+                    BatteryRing(symbol: "magicmouse.fill", name: "鼠标", percentage: peripheral(kind: .mouse)?.percentage)
+                    BatteryRing(symbol: "keyboard.fill", name: "键盘", percentage: peripheral(kind: .keyboard)?.percentage)
+                }
+                .fixedSize()
+                // 环缩小后右侧会多出空白，稍加右内边距让整体在卡片里居中。
+                .padding(.trailing, 4)
             }
+            // 显式指定居中，不依赖 HStack 默认对齐，避免日后改动布局时环体又被顶高。
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .panel()
     }
@@ -348,7 +363,9 @@ struct MonitorPanel: View {
 
     private var processCard: some View {
         VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
+            // 与 ProcessRow 保持同一套水平内边距与列间距，否则「内存 / CPU」
+            // 表头会和下面的数值列错开 5pt。
+            HStack(spacing: 5) {
                 Text("高占用进程").font(.system(size: 11, weight: .semibold))
                 Spacer()
                 Text("内存").frame(width: 70, alignment: .trailing)
@@ -364,8 +381,12 @@ struct MonitorPanel: View {
             }
             .font(.system(size: 9))
             .foregroundStyle(Palette.muted)
+            .padding(.horizontal, 5)
             if store.processes.isEmpty {
-                Text("当前无法读取进程列表").font(.system(size: 10)).foregroundStyle(Palette.muted)
+                Text("当前无法读取进程列表")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Palette.dim)
+                    .padding(.horizontal, 5)
             }
             ForEach(store.processes) { process in
                 ProcessRow(process: process) { store.refreshProcesses() }
@@ -419,24 +440,30 @@ private struct BatteryRing: View {
     let name: String
     let percentage: Int?
 
+    /// 环体直径。原来 49pt 会把整块电量区顶到上方的分隔线上，
+    /// 收到 34pt 后与外设文字行、左侧 MacBook 百分比在视觉上齐平。
+    private let diameter: CGFloat = 34
+    private let lineWidth: CGFloat = 4
+
     var body: some View {
-        VStack(spacing: 3) {
+        VStack(spacing: 2) {
             ZStack {
-                Circle().stroke(.white.opacity(0.12), lineWidth: 5)
+                Circle().stroke(.white.opacity(0.12), lineWidth: lineWidth)
                 if let percentage {
                     Circle()
                         .trim(from: 0, to: CGFloat(percentage) / 100)
-                        .stroke(Palette.mint, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                        .stroke(Palette.mint, style: StrokeStyle(lineWidth: lineWidth, lineCap: .round))
                         .rotationEffect(.degrees(-90))
                 }
                 Image(systemName: symbol)
-                    .font(.system(size: 17))
+                    .font(.system(size: 12))
                     .foregroundStyle(.white.opacity(0.8))
             }
-            .frame(width: 49, height: 49)
+            .frame(width: diameter, height: diameter)
             Text("\(name) \(percentage.map { "\($0)%" } ?? "—")")
                 .font(.system(size: 9))
                 .foregroundStyle(Palette.muted)
+                .fixedSize()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(name)电量\(percentage.map { "\($0)%" } ?? "未知")")
@@ -446,28 +473,38 @@ private struct BatteryRing: View {
 private struct ProcessRow: View {
     let process: ProcessReading
     let onAction: () -> Void
+    @State private var hovering = false
+
+    /// CPU 超过阈值时才用琥珀色提醒；其余连同进程名一起走暗色，整体压低亮度。
+    private var cpuColor: Color { process.cpuPercent > 50 ? Palette.amber : Palette.dim }
 
     var body: some View {
         HStack(spacing: 5) {
-            Text(process.name).lineLimit(1).truncationMode(.middle)
+            Text(process.name)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .foregroundStyle(hovering ? Palette.mint : Palette.dim)
             Spacer(minLength: 4)
             Text(ByteCountFormatter.string(fromByteCount: Int64(process.memoryBytes), countStyle: .memory))
                 .frame(width: 70, alignment: .trailing)
-                .foregroundStyle(Palette.muted)
+                .foregroundStyle(Palette.dim)
             Text(String(format: "%.1f%%", process.cpuPercent))
                 .frame(width: 48, alignment: .trailing)
-                .foregroundStyle(process.cpuPercent > 50 ? Palette.amber : Palette.muted)
+                .foregroundStyle(cpuColor)
             Menu {
                 Button("在访达中显示") { ProcessActions.reveal(process) }
-                    .disabled(NSRunningApplication(processIdentifier: process.pid)?.bundleURL == nil)
                 Button("复制进程名称") { ProcessActions.copy(process.name) }
                 Button("复制 PID") { ProcessActions.copy("\(process.pid)") }
                 Divider()
+                // 用 ProcessInspector（libproc）判断可用性：NSRunningApplication 对
+                // 非 GUI 进程恒为 nil，曾导致进程榜里绝大多数条目无法操作。
                 Button("终止") { ProcessActions.terminate(process, force: false); onAction() }
+                    .disabled(!ProcessActions.canTerminate(process))
                 Button("强制退出…", role: .destructive) {
                     ProcessActions.terminate(process, force: true)
                     onAction()
                 }
+                .disabled(!ProcessActions.canTerminate(process))
             } label: {
                 Image(systemName: "ellipsis")
                     .frame(width: 22, height: 18)
@@ -476,10 +513,24 @@ private struct ProcessRow: View {
             .menuStyle(.borderlessButton)
             .menuIndicator(.hidden)
             .frame(width: 22)
+            // 悬停时才点亮操作入口；非悬停保持克制，避免整列图标抢视线。
+            .foregroundStyle(hovering ? Palette.mint : Palette.dim)
+            .opacity(hovering ? 1 : 0.7)
             .accessibilityLabel("\(process.name)操作")
         }
         .font(.system(size: 10, weight: .medium))
-        .padding(.vertical, 1)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 2)
+        // 悬停高亮：整行铺满可命中区域，避免只有文字部分响应鼠标。
+        .background(
+            RoundedRectangle(cornerRadius: 5)
+                .fill(hovering ? Palette.rowHover : Color.clear)
+        )
+        .contentShape(RoundedRectangle(cornerRadius: 5))
+        .onHover { inside in
+            withAnimation(.easeOut(duration: 0.12)) { hovering = inside }
+        }
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -522,8 +573,10 @@ struct SettingsPanel: View {
                 .foregroundStyle(.secondary)
         }
         .formStyle(.grouped)
-        .padding(12)
-        .frame(minWidth: 380, idealWidth: 420, maxWidth: 460,
-               minHeight: 440, idealHeight: 500, maxHeight: .infinity, alignment: .top)
+        .padding(10)
+        // 不要在这里写死 minHeight：Form 自身的高度才是「不出现滚动条」的依据，
+        // 窗口大小由 AppDelegate 依据 preferredContentSize 决定。
+        .frame(minWidth: 380, idealWidth: 440, maxWidth: .infinity)
+        .fixedSize(horizontal: false, vertical: true)
     }
 }

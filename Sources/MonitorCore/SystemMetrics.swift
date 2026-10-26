@@ -52,20 +52,25 @@ public struct ProcessReading: Identifiable, Sendable {
               let cpu = Double(parts[1]),
               let rss = UInt64(parts[2]),
               pid != getpid() else { return nil }
-        let start = parts[3...7].joined(separator: " ")
-        let path = String(parts[8])
+
+        // 路径与启动时间一律以 libproc/sysctl 为准，不用 ps 的输出：
+        // `ps -o comm=` 来自内核 p_comm（仅 MAXCOMLEN=16 字节），长路径会被截断，
+        // 截断值既不是完整路径、也无法与完整路径比对，后续「终止」必然误判。
+        // `ps lstart=` 是本地化文本，随 locale/时区变化，不适合做身份比对。
+        guard let identity = ProcessInspector.identity(of: pid) else { return nil }
+
         let name: String
-        if let appRange = path.range(of: ".app/", options: .backwards) {
-            let bundlePath = String(path[..<appRange.lowerBound])
+        if let appRange = identity.path.range(of: ".app/", options: .backwards) {
+            let bundlePath = String(identity.path[..<appRange.lowerBound])
             name = URL(fileURLWithPath: bundlePath).lastPathComponent
         } else {
-            name = URL(fileURLWithPath: path).lastPathComponent
+            name = URL(fileURLWithPath: identity.path).lastPathComponent
         }
         return ProcessReading(
             pid: pid,
             name: name,
-            executablePath: path,
-            startTime: start,
+            executablePath: identity.path,
+            startTime: identity.start,
             memoryBytes: rss * 1024,
             cpuPercent: cpu
         )

@@ -62,10 +62,30 @@ check(PeripheralBattery.fromBLE(name: "RAPOO 5.0MS", kind: .mouse, value: Data([
 check(ProcessIdentity.matches(expectedPath: "/Applications/Foo.app/Contents/MacOS/Foo", expectedStart: "Thu Oct 22 19:59:09 2026", observedPath: "/Applications/Foo.app/Contents/MacOS/Foo", observedStart: "Thu Oct 22 19:59:09 2026"), "same process identity")
 check(!ProcessIdentity.matches(expectedPath: "/Applications/Foo.app/Contents/MacOS/Foo", expectedStart: "Thu Oct 22 19:59:09 2026", observedPath: "/Applications/Foo.app/Contents/MacOS/Foo", observedStart: "Thu Oct 22 20:00:00 2026"), "reused PID start")
 check(!ProcessIdentity.matches(expectedPath: "/Applications/Foo.app/Contents/MacOS/Foo", expectedStart: "Thu Oct 22 19:59:09 2026", observedPath: nil, observedStart: nil), "exited process")
-let processLine = "45633 1.1 33312 Thu Oct 22 19:59:09 2026 /Applications/Foo Bar.app/Contents/MacOS/Foo"
-check(ProcessReading.parse(processLine)?.executablePath == "/Applications/Foo Bar.app/Contents/MacOS/Foo", "process path with spaces")
-check(ProcessReading.parse(processLine)?.startTime == "Thu Oct 22 19:59:09 2026", "process start token")
-check(ProcessReading.parse(processLine)?.name == "Foo Bar", "app display name")
+// 解析器不再从 ps 文本里取路径/启动时间（ps 的 comm 会被内核截断到 16 字节、
+// lstart 是本地化文本），改为按 pid 走 libproc 查真实身份。因此这里断言的是：
+// ps 行里的 CPU/RSS 被正确解析，而路径与启动时间来自进程自身。
+let selfPid = String(getpid())
+let selfPath = ProcessInspector.executablePath(of: getpid())
+check(selfPath != nil, "libproc resolves own executable path")
+check(ProcessInspector.startEpoch(of: getpid()) != nil, "libproc resolves own start epoch")
+// 自身进程在解析时被主动排除（避免自己杀自己）
+check(ProcessReading.parse(selfPid + " 0.0 1024 Thu Oct 22 19:59:09 2026 " + (selfPath ?? "/bin/foo")) == nil,
+      "own process is excluded")
+// 不存在的 pid 必须解析失败，而不是返回一个路径错误/时间错误的条目
+check(ProcessReading.parse("999999 1.1 33312 Thu Oct 22 19:59:09 2026 /Applications/Foo Bar.app/Contents/MacOS/Foo") == nil,
+      "nonexistent pid is rejected")
+// 真实存在但不是自己的进程：路径必须是完整路径（含空格也没问题）
+let otherPid = getppid()
+if let other = ProcessInspector.executablePath(of: otherPid) {
+    let line = "\(otherPid) 0.0 1024 Thu Oct 22 19:59:09 2026 \(other)"
+    let parsed = ProcessReading.parse(line)
+    check(parsed?.executablePath == other, "process path comes from libproc, not ps text")
+    if let start = ProcessInspector.startEpoch(of: otherPid) {
+        check(parsed?.startTime == start, "process start is epoch seconds from sysctl")
+        check(Int64(parsed?.startTime ?? "x") != nil, "start time is numeric epoch")
+    }
+}
 // 更新清单解析：契约字段、架构回落、版本比较与错误分支。
 let feedSample = Data(#"""
 {"version":"0.2.0","build":2,"minimumSystemVersion":"14.0","publishedAt":"2026-10-25T10:00:00Z",
@@ -110,4 +130,29 @@ expectFeedError(#"{"version":"0.2.0","build":2,"downloads":[]}"#, .missingDownlo
 expectFeedError("not json", .malformed, "feed malformed json")
 expectFeedError(#"{"version":"0.2.0","downloads":[{"architecture":"arm64","url":"https://e.com/a.dmg"}]}"#, .malformed, "feed missing build")
 expectFeedError(#"{"version":"0.2.0","build":2,"downloads":[{"architecture":"arm64","url":"file:///tmp/a.dmg"}]}"#, .malformed, "feed non http url")
-print("78 metric checks passed")
+// ---- ProcessIdentity：进程终止前的一致性校验（防杀错进程） ----
+// 内核 p_comm 只有 MAXCOMLEN(16) 字节，ps -o comm= 对长路径必然截断，
+// 截断值绝不能与完整 executablePath 判为同一进程。
+let longPath = "/Applications/Google Chrome.app/Contents/Frameworks/Google Chrome Framework.framework/Versions/155.0.8059.86/Helpers/Google Chrome Helper (Aperitif Renderer).app/Contents/MacOS/Google Chrome Helper (Aperitif Renderer)"
+check(!ProcessIdentity.matches(expectedPath: longPath, expectedStart: "Mon Oct 26 16:07:47 2026",
+                               observedPath: "Google Chrome He", observedStart: "Mon Oct 26 16:07:47 2026"),
+      "truncated comm must not match full path")
+check(ProcessIdentity.matches(expectedPath: "/usr/bin/java", expectedStart: "1793002067",
+                              observedPath: "/usr/bin/java", observedStart: "1793002067"),
+      "identical path and start time match")
+check(!ProcessIdentity.matches(expectedPath: "/usr/bin/java", expectedStart: "1793002067",
+                               observedPath: "/usr/bin/java", observedStart: "1793002100"),
+      "same path different start is a different process")
+check(!ProcessIdentity.matches(expectedPath: "", expectedStart: "1", observedPath: "", observedStart: "1"),
+      "empty expected path never matches")
+check(!ProcessIdentity.matches(expectedPath: "/a", expectedStart: "", observedPath: "/a", observedStart: ""),
+      "empty expected start never matches")
+check(!ProcessIdentity.matches(expectedPath: "/a", expectedStart: "1", observedPath: nil, observedStart: "1"),
+      "nil observed path never matches")
+check(!ProcessIdentity.matches(expectedPath: "/a", expectedStart: "1", observedPath: "/a", observedStart: nil),
+      "nil observed start never matches")
+check(!ProcessIdentity.matches(expectedPath: longPath, expectedStart: "1793002067",
+                               observedPath: longPath, observedStart: "1793009999"),
+      "recycled pid with same path is rejected")
+
+print("85 metric checks passed")

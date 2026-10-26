@@ -179,17 +179,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     @discardableResult
     private func openSettingsWindow() -> NSWindow? {
         if settingsWindow == nil {
+            // 高度按内容自适应：Form 的固有高度会随分区数量与说明文字变化，
+            // 写死窗口高度会在内容变多时立刻出现滚动条。这里用 NSHostingController
+            // 上报首选尺寸，窗口直接取「内容高度」，默认打开时正好没有滚动条。
+            let controller = NSHostingController(rootView: SettingsPanel(store: store, updates: updates))
+            controller.sizingOptions = [.preferredContentSize]
+            let preferred = controller.preferredContentSize
+            let height = preferred.height > 0 ? preferred.height : 620
+
             let window = NSWindow(
-                contentRect: NSRect(x: 0, y: 0, width: 420, height: 500),
+                contentRect: NSRect(x: 0, y: 0, width: 440, height: height),
                 styleMask: [.titled, .closable, .resizable],
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: 360, height: 440)
+            window.minSize = NSSize(width: 380, height: height)
             window.title = "v5xs 设置"
             window.isReleasedWhenClosed = false
             window.delegate = self
-            window.contentView = NSHostingView(rootView: SettingsPanel(store: store, updates: updates))
+            window.contentViewController = controller
             settingsWindow = window
         }
         return settingsWindow
