@@ -49,7 +49,9 @@ struct MonitorPanel: View {
             HStack {
                 Button("设置", action: onOpenSettings)
                 Spacer()
-                Text("\(updates.currentVersionText) · 每秒更新").foregroundStyle(Palette.muted)
+                // 跟随设置页里选择的刷新频率，不要写死「每秒更新」。
+                Text("\(updates.currentVersionText) · \(store.refreshRate.shortDescription)")
+                    .foregroundStyle(Palette.muted)
                 Spacer()
                 Button("退出") { NSApp.terminate(nil) }
             }
@@ -246,11 +248,11 @@ struct MonitorPanel: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Spacer()
-                Button(store.lowLatencyMode ? "关闭低延迟" : "开启低延迟") {
-                    store.lowLatencyMode.toggle()
-                }
-                .buttonStyle(.plain)
-                .help("低延迟模式每 0.5 秒采样一次")
+                // 刷新频率已移到设置页统一配置；这里只做状态展示，
+                // 避免同一设置出现两个入口、两处状态可能不同步。
+                Text("刷新 \(store.refreshRate.title)")
+                    .lineLimit(1)
+                    .help("在设置页可以调整监测刷新频率")
             }
             .font(.system(size: 9))
             .foregroundStyle(Palette.muted)
@@ -558,6 +560,23 @@ struct SettingsPanel: View {
             Text("减少动态效果开启时，图标会保持静态。")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+
+            Section {
+                Picker("监测刷新频率", selection: $store.refreshRate) {
+                    ForEach(RefreshRate.allCases, id: \.self) { rate in
+                        Text(rate.title).tag(rate)
+                    }
+                }
+                Text(store.refreshRate.detail + "改动立即生效。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } header: {
+                Text("监测")
+            } footer: {
+                Text("频率越高曲线越细腻，但采样本身也会占用少量 CPU。")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
 
             Section {
                 Stepper("应用列表缓存：\(cacheDays) 天", value: $store.appCacheDays, in: 1...365, step: 1)

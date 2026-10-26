@@ -33,10 +33,12 @@ final class MonitorStore: ObservableObject {
     @Published var gpuCores: Int?
     @Published var chipName: String?
     @Published var networkType = "—"
-    @Published var lowLatencyMode: Bool {
+    /// 监测页面的采样频率。改后立即重建定时器，无需重启。
+    @Published var refreshRate: RefreshRate {
         didSet {
-            UserDefaults.standard.set(lowLatencyMode, forKey: "lowLatencyMode")
-            if timer != nil { configureTimer() }
+            guard oldValue != refreshRate else { return }
+            UserDefaults.standard.set(refreshRate.rawValue, forKey: Self.refreshRateKey)
+            configureTimer()
         }
     }
     @Published var gpuUsage: Double?
@@ -70,6 +72,8 @@ final class MonitorStore: ObservableObject {
     private var reportedPeripherals: [PeripheralBattery] = []
     private var blePeripherals: [PeripheralBattery] = []
     private var timer: Timer?
+    private static let refreshRateKey = "refreshRate"
+    private static let legacyLowLatencyKey = "lowLatencyMode"
     private let pathMonitor = NWPathMonitor()
     private var lastSlowSample: Date?
     private var smoothedCPU: Double?
@@ -109,7 +113,20 @@ final class MonitorStore: ObservableObject {
     init() {
         animal = Animal(rawValue: UserDefaults.standard.string(forKey: "animal") ?? "") ?? .cat
         animationPaused = UserDefaults.standard.bool(forKey: "animationPaused")
-        lowLatencyMode = UserDefaults.standard.bool(forKey: "lowLatencyMode")
+        // 旧版本只有一个 lowLatencyMode 布尔开关，迁移到新的多档刷新频率后继续生效。
+        // 注意先算出值再赋给属性：refreshRate 带 didSet，赋值时读取 self 会触发
+        // 「used before all stored properties are initialized」，所以全程用局部变量。
+        let defaults = UserDefaults.standard
+        let initialRate: RefreshRate
+        if let stored = defaults.string(forKey: Self.refreshRateKey) {
+            initialRate = RefreshRate.stored(stored)
+        } else {
+            initialRate = RefreshRate.migratingFromLowLatency(
+                defaults.bool(forKey: Self.legacyLowLatencyKey)
+            )
+            defaults.set(initialRate.rawValue, forKey: Self.refreshRateKey)
+        }
+        refreshRate = initialRate
         appCacheDays = AppListCacheSetting.days
     }
 
@@ -148,11 +165,22 @@ final class MonitorStore: ObservableObject {
         }
     }
 
+    /// 按当前刷新频率（重新）创建采样定时器。
+    ///
+    /// 注意：这里**不能**加 `guard timer != nil` 之类的「已在运行才处理」判断。
+    /// `start()` 首次调用本方法时 `timer` 必然是 nil，加了守卫就等于永不创建定时器，
+    /// 采样循环彻底停摆，健康分数会一直停在「采集中」（这个 bug 真实发生过）。
+    /// 本方法应当是无条件幂等的：先失效旧定时器，再按当前频率建新的。
     private func configureTimer() {
         timer?.invalidate()
-        timer = Timer.scheduledTimer(withTimeInterval: lowLatencyMode ? 0.5 : 1, repeats: true) { [weak self] _ in
+        let interval = refreshRate.interval
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor [weak self] in self?.sample() }
         }
+        // 只放宽、不收紧：系统默认容差约为间隔的 10%，这里取同样的 10% 但封顶 0.5 秒。
+        // 容差允许系统合并唤醒，菜单栏常驻应用因此更省电；不要设得比默认更小，
+        // 那只会增加唤醒次数。注意不能让容差超过间隔本身，否则采样会被明显拖慢。
+        timer?.tolerance = min(interval * 0.1, 0.5, interval * 0.5)
     }
 
     func stop() {

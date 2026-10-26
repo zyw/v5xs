@@ -184,8 +184,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 上报首选尺寸，窗口直接取「内容高度」，默认打开时正好没有滚动条。
             let controller = NSHostingController(rootView: SettingsPanel(store: store, updates: updates))
             controller.sizingOptions = [.preferredContentSize]
-            let preferred = controller.preferredContentSize
-            let height = preferred.height > 0 ? preferred.height : 620
+            let content = controller.preferredContentSize
+            let contentHeight = content.height > 0 ? content.height : 620
+
+            // 初始高度取内容高度，但不超过屏幕可用高度再留出标题栏与边距的余量，
+            // 否则在小屏笔记本上窗口会伸出屏幕外。超出上限时让内容滚动。
+            let visible = (NSScreen.main?.visibleFrame.height ?? 900) - 80
+            let height = min(contentHeight, max(visible, 520))
 
             let window = NSWindow(
                 contentRect: NSRect(x: 0, y: 0, width: 440, height: height),
@@ -193,7 +198,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.minSize = NSSize(width: 380, height: height)
+            // 最小高度取「内容高度」与屏幕可用高度的较小值：内容不溢出时正好没有滚动条，
+            // 屏幕太矮时也允许用户把窗口缩小到能放下为止。
+            window.minSize = NSSize(width: 380, height: min(contentHeight, max(visible, 520)))
             window.title = "v5xs 设置"
             window.isReleasedWhenClosed = false
             window.delegate = self

@@ -1,4 +1,5 @@
 .build/
 .build-local/
+.build-probe/
 dist/
 .DS_Store

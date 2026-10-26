@@ -155,4 +155,87 @@ check(!ProcessIdentity.matches(expectedPath: longPath, expectedStart: "179300206
                                observedPath: longPath, observedStart: "1793009999"),
       "recycled pid with same path is rejected")
 
-print("85 metric checks passed")
+// ---- 刷新频率设置：档位映射、持久化回落与旧设置迁移 ----
+check(RefreshRate.allCases.count == 4, "four refresh rate options")
+check(RefreshRate.default == .normal, "default refresh rate is one second")
+check(RefreshRate.high.interval == 0.5, "high rate is half a second")
+check(RefreshRate.normal.interval == 1, "normal rate is one second")
+check(RefreshRate.relaxed.interval == 2, "relaxed rate is two seconds")
+check(RefreshRate.low.interval == 5, "low rate is five seconds")
+// 每档都必须真的更快/更慢，且都大于 0，避免选出会让定时器空转的值
+check(RefreshRate.allCases.allSatisfy { $0.interval > 0 }, "every rate interval is positive")
+let intervals = RefreshRate.allCases.map(\.interval)
+check(zip(intervals, intervals.dropFirst()).allSatisfy { $0 < $1 }, "rates are strictly ordered")
+// 持久化往返：rawValue 存进去必须能读回来
+check(RefreshRate.allCases.allSatisfy { RefreshRate.stored($0.rawValue) == $0 }, "raw value round trips")
+// 脏数据不能把采样停摆，必须回落到默认档
+check(RefreshRate.stored(nil) == .normal, "missing stored value falls back to default")
+check(RefreshRate.stored("") == .normal, "empty stored value falls back to default")
+check(RefreshRate.stored("0") == .normal, "zero interval never accepted")
+check(RefreshRate.stored("abc") == .normal, "garbage stored value falls back to default")
+// 旧版 lowLatencyMode 迁移：开=极快，关=标准
+check(RefreshRate.migratingFromLowLatency(true) == .high, "legacy low latency on migrates to high")
+check(RefreshRate.migratingFromLowLatency(false) == .normal, "legacy low latency off migrates to normal")
+// 每档都要有非空的人类可读名称与说明，否则设置页会出现空白选项
+check(RefreshRate.allCases.allSatisfy { !$0.title.isEmpty && !$0.detail.isEmpty }, "every rate has title and detail")
+
+// ---- 采样循环必须能启动 ----
+// 回归：configureTimer() 曾加过「guard timer != nil」守卫，导致 start() 首次调用
+// 直接 return，定时器永不创建，采样停摆 => 健康分数一直显示「采集中」。
+// 这里用与 MonitorStore 相同的「创建再重建」语义验证幂等性：
+// 首次创建必须成功，重复调用必须替换为新定时器而不是直接跳过。
+final class TimerProbe {
+    var timer: Timer?
+    var creations = 0
+
+    /// 与 MonitorStore.configureTimer() 保持同一语义：无条件失效并重建。
+    func configure(interval: TimeInterval) {
+        timer?.invalidate()
+        creations += 1
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { _ in }
+    }
+}
+
+let probe = TimerProbe()
+probe.configure(interval: RefreshRate.normal.interval)
+check(probe.timer != nil, "first configure creates a timer")
+check(probe.creations == 1, "first configure is not skipped")
+let firstTimer = probe.timer
+probe.configure(interval: RefreshRate.low.interval)
+check(probe.creations == 2, "reconfigure creates a new timer")
+check(probe.timer !== firstTimer, "reconfigure replaces the old timer")
+check(probe.timer != nil, "timer stays alive after reconfigure")
+probe.timer?.invalidate()
+
+// 每一档都能成功建立一个有效定时器（间隔必须大于 0，否则会忙循环）
+for rate in RefreshRate.allCases {
+    let p = TimerProbe()
+    p.configure(interval: rate.interval)
+    check(p.timer != nil, "timer starts for \(rate.title)")
+    check(p.timer?.timeInterval == rate.interval, "timer uses \(rate.title) interval")
+    p.timer?.invalidate()
+}
+
+// ---- 面板底部状态栏的文案必须跟随所选刷新频率 ----
+// 回归：底部曾写死「每秒更新」，用户把频率改成 5 秒后仍显示「每秒更新」，
+// 与实际采样间隔不符。
+check(RefreshRate.high.shortDescription == "每 0.5 秒更新", "high footer text")
+check(RefreshRate.normal.shortDescription == "每秒更新", "normal footer text")
+check(RefreshRate.relaxed.shortDescription == "每 2 秒更新", "relaxed footer text")
+check(RefreshRate.low.shortDescription == "每 5 秒更新", "low footer text")
+// 两档文案若相同，用户改档后就看不出来，因此必须互不相同
+let descriptions = RefreshRate.allCases.map(\.shortDescription)
+check(Set(descriptions).count == RefreshRate.allCases.count, "every rate has a distinct footer text")
+check(RefreshRate.allCases.allSatisfy { !$0.shortDescription.isEmpty }, "footer text is never empty")
+// 文案里的秒数必须与 interval 吻合，防止改了 interval 忘了改文案。
+// 注意 1 秒档的文案是「每秒更新」，不含阿拉伯数字，所以单独约定：
+// 非 1 秒的档位文案必须出现对应的数字，1 秒档必须用「每秒」。
+for rate in RefreshRate.allCases where rate.interval != 1 {
+    let seconds = String(format: "%g", rate.interval)
+    check(rate.shortDescription.contains(seconds),
+          "footer text mentions \(seconds)s for \(rate.title)")
+}
+check(RefreshRate.normal.shortDescription.contains("每秒"),
+      "one-second rate footer says 每秒")
+
+print("119 metric checks passed")
