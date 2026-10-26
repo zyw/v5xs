@@ -181,7 +181,7 @@ public final class SystemSampler {
             guard maximum > 0 else { continue }
             let percentage = min(100, max(0, Int((Double(current) / Double(maximum) * 100).rounded())))
             let connected = details[kIOPSPowerSourceStateKey as String] as? String == kIOPSACPowerValue
-            return (percentage, connected ? "电源已连接" : "使用电池")
+            return (percentage, connected ? Strings.current(.batteryConnected) : Strings.current(.batteryOnBattery))
         }
         return nil
     }

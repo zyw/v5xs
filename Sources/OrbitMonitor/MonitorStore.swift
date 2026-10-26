@@ -4,18 +4,30 @@ import MonitorCore
 import Network
 import ServiceManagement
 
+/// 菜单栏动物形象。
+///
+/// `rawValue` 是**持久化标识**，必须保持不变（用户已保存的选择依赖它）；
+/// 界面上显示的名称一律走 `displayName`，跟随界面语言。
 enum Animal: String, CaseIterable, Identifiable {
-    case cat = "猫"
-    case rabbit = "兔"
-    case fox = "狐"
-    case dog = "狗"
-    case horse = "马"
-    case dinosaur = "恐龙"
-    case frog = "青蛙"
-    case chicken = "鸡"
-    case duck = "鸭"
-    case fish = "鱼"
+    case cat, rabbit, fox, dog, horse, dinosaur, frog, chicken, duck, fish
+
     var id: String { rawValue }
+
+    /// 跟随界面语言的显示名。
+    var displayName: String {
+        switch self {
+        case .cat: return Strings.current(.animalCat)
+        case .rabbit: return Strings.current(.animalRabbit)
+        case .fox: return Strings.current(.animalFox)
+        case .dog: return Strings.current(.animalDog)
+        case .horse: return Strings.current(.animalHorse)
+        case .dinosaur: return Strings.current(.animalDinosaur)
+        case .frog: return Strings.current(.animalFrog)
+        case .chicken: return Strings.current(.animalChicken)
+        case .duck: return Strings.current(.animalDuck)
+        case .fish: return Strings.current(.animalFish)
+        }
+    }
 }
 
 @MainActor
@@ -27,7 +39,7 @@ final class MonitorStore: ObservableObject {
     @Published var diskRead: Double?
     @Published var diskWrite: Double?
     @Published var batteryPercentage: Int?
-    @Published var batteryStatus = "未提供电量"
+    @Published var batteryStatus = Strings.current(.batteryNoInfo)
     @Published var peripherals: [PeripheralBattery] = []
     @Published var processes: [ProcessReading] = []
     @Published var gpuCores: Int?
@@ -84,11 +96,11 @@ final class MonitorStore: ObservableObject {
 
     var thermalDescription: String {
         switch ProcessInfo.processInfo.thermalState {
-        case .nominal: "正常"
-        case .fair: "略高"
-        case .serious: "偏高"
-        case .critical: "严重"
-        @unknown default: "未知"
+        case .nominal: Strings.current(.thermalNominal)
+        case .fair: Strings.current(.thermalFair)
+        case .serious: Strings.current(.thermalSerious)
+        case .critical: Strings.current(.thermalCritical)
+        @unknown default: Strings.current(.unknown)
         }
     }
 
@@ -148,11 +160,11 @@ final class MonitorStore: ObservableObject {
         configureTimer()
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let label: String
-            if path.status != .satisfied { label = "离线" }
-            else if path.usesInterfaceType(.wifi) { label = "Wi-Fi" }
-            else if path.usesInterfaceType(.wiredEthernet) { label = "以太网" }
-            else if path.usesInterfaceType(.cellular) { label = "蜂窝网络" }
-            else { label = "网络" }
+            if path.status != .satisfied { label = Strings.current(.netOffline) }
+            else if path.usesInterfaceType(.wifi) { label = Strings.current(.netWifi) }
+            else if path.usesInterfaceType(.wiredEthernet) { label = Strings.current(.netEthernet) }
+            else if path.usesInterfaceType(.cellular) { label = Strings.current(.netCellular) }
+            else { label = Strings.current(.netOther) }
             Task { @MainActor [weak self] in self?.networkType = label }
         }
         pathMonitor.start(queue: DispatchQueue.global(qos: .utility))

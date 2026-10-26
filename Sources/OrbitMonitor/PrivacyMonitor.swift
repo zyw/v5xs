@@ -2,6 +2,7 @@ import AVFoundation
 import CoreAudio
 import Foundation
 import AppKit
+import MonitorCore
 
 /// 摄像头 / 麦克风占用检测。
 /// - 麦克风：用 macOS 14.2+ 的 CoreAudio 进程对象（kAudioHardwarePropertyProcessObjectList）
@@ -20,11 +21,16 @@ final class PrivacyMonitor: @unchecked Sendable {
 
     var onUpdate: ((Status) -> Void)?
 
-    private let appNameOverrides: [String: String] = [
-        "com.apple.WebKit.GPU": "浏览器",
-        "com.apple.WebKit.Networking": "浏览器",
-        "com.apple.WebKit.WebContent": "网页",
-    ]
+    /// WebKit 子进程没有可读的应用名，用固定名称兜底。
+    /// 做成计算属性而不是常量字典：常量在类型初始化时求值一次，
+    /// 切换界面语言后不会更新。
+    private var appNameOverrides: [String: String] {
+        [
+            "com.apple.WebKit.GPU": Strings.current(.browserName),
+            "com.apple.WebKit.Networking": Strings.current(.browserName),
+            "com.apple.WebKit.WebContent": Strings.current(.webPage),
+        ]
+    }
 
     private func displayName(forPid pid: Int32, bundleID: String?) -> String? {
         guard let bundleID else { return nil }
@@ -95,7 +101,9 @@ final class PrivacyMonitor: @unchecked Sendable {
         let camInUse = cameraInUse()
         let status = Status(
             micInUse: mic != nil,
-            micProcess: mic.map { displayName(forPid: $0.pid, bundleID: $0.bundleID) ?? "其他进程" } ?? nil,
+            micProcess: mic.map {
+                displayName(forPid: $0.pid, bundleID: $0.bundleID) ?? Strings.current(.otherProcess)
+            } ?? nil,
             camInUse: camInUse,
             // macOS 无按进程归属摄像头的公开 API：有摄像头占用但具体是哪个 App 不可知，
             // 交给 UI 显示"有其他进程在访问"，绝不编造应用名。

@@ -57,8 +57,10 @@ final class UpdateChecker: ObservableObject {
 
     /// 右键菜单文案：有新版时直接点明版本号，其余情况保持中性。
     var menuTitle: String {
-        if case let .available(release, _) = state { return "发现新版本 v\(release.version)…" }
-        return "检查更新…"
+        if case let .available(release, _) = state {
+            return Strings.current(.newVersionMenu, release.version)
+        }
+        return Strings.current(.checkUpdatesEllipsis)
     }
 
     /// 启动时调用：距上次检查超过 24 小时（或从未检查）就在后台查一次。
@@ -113,10 +115,11 @@ final class UpdateChecker: ObservableObject {
             return .upToDate
         }
         guard UpdateFeed.satisfiesMinimumSystem(release.minimumSystemVersion, currentVersion: systemVersion) else {
-            return .failed("需要 macOS \(release.minimumSystemVersion ?? "—") 或更高版本")
+            return .failed(Strings.current(.requiresMacOS,
+                                           release.minimumSystemVersion ?? Strings.current(.notAvailable)))
         }
         guard let download = UpdateFeed.download(for: release, architecture: architecture) else {
-            return .failed("当前架构（\(architecture)）暂无安装包")
+            return .failed(Strings.current(.noDownloadForArch, architecture))
         }
         return .available(release, download)
     }
@@ -155,18 +158,18 @@ final class UpdateChecker: ObservableObject {
     private static func message(for error: Error) -> String {
         if let feedError = error as? UpdateFeedError {
             return switch feedError {
-            case .malformed: "更新清单格式不正确"
-            case .missingVersion: "更新清单缺少版本号"
-            case .missingDownloads: "更新清单没有可用的下载地址"
+            case .malformed: Strings.current(.feedMalformed)
+            case .missingVersion: Strings.current(.feedMissingVersion)
+            case .missingDownloads: Strings.current(.feedMissingDownloads)
             }
         }
         if let checkError = error as? CheckError {
             return switch checkError {
-            case .notHTTP: "更新服务响应无效"
-            case .badStatus(let code): "更新服务返回 HTTP \(code)"
+            case .notHTTP: Strings.current(.updateNotHTTP)
+            case .badStatus(let code): Strings.current(.updateBadStatus, Int(code))
             }
         }
-        return "无法连接更新服务：\(error.localizedDescription)"
+        return Strings.current(.updateCannotConnect, error.localizedDescription)
     }
 }
 

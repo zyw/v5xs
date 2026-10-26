@@ -44,10 +44,18 @@ check(SMCKeyEncoding.bytes("Tp01") == [0x31, 0x30, 0x70, 0x54], "SMC key little 
 check(HealthScore.value(cpu: 10, memoryFraction: 0.4, thermal: .nominal) == 100, "healthy score")
 check(HealthScore.value(cpu: 80, memoryFraction: 0.9, thermal: .fair) == 76, "elevated score")
 check(HealthScore.value(cpu: nil, memoryFraction: 0.4, thermal: .nominal) == nil, "missing CPU score")
+// 这些文案现在跟随界面语言，所以先显式固定语言，避免依赖「默认语言恰好是简体中文」
+Localization.shared.set(.zhHans)
 check(HealthScore.label(for: 80) == "良好", "healthy label")
 check(HealthScore.label(for: 40) == "偏高", "high-risk label")
-check(UptimeText.describe(seconds: 3 * 86_400 + 12 * 3_600) == "3天 12小时", "uptime days")
+check(UptimeText.describe(seconds: 3 * 86_400 + 12 * 3_600) == "已运行 3 天 12 小时", "uptime days")
 check(UptimeText.describe(seconds: -1) == nil, "invalid uptime")
+// 同一函数在英文下必须给出英文文案
+Localization.shared.set(.en)
+check(HealthScore.label(for: 80) == "Good", "healthy label in english")
+check(UptimeText.describe(seconds: 3 * 86_400 + 12 * 3_600) == "Uptime 3 days 12 hours", "uptime days in english")
+check(UptimeText.duration(seconds: 3 * 86_400 + 12 * 3_600) == "3 days 12 hours", "uptime duration in english")
+Localization.shared.set(.zhHans)
 check(PeripheralBattery.parse(["Product": "Magic Mouse", "Transport": "Bluetooth", "BatteryPercent": 84])?.percentage == 84, "HID battery")
 check(PeripheralBattery.parse(["Product": "Internal", "Transport": "USB", "BatteryPercent": 80]) == nil, "internal device")
 check(PeripheralBattery.parse(["Product": "Mouse", "Transport": "Bluetooth", "BatteryPercent": 140]) == nil, "invalid battery")
@@ -219,23 +227,75 @@ for rate in RefreshRate.allCases {
 // ---- 面板底部状态栏的文案必须跟随所选刷新频率 ----
 // 回归：底部曾写死「每秒更新」，用户把频率改成 5 秒后仍显示「每秒更新」，
 // 与实际采样间隔不符。
+// 文案现在统一为「每 %@ 秒更新」，由 intervalText 提供数字，各语言共用同一条译文。
+Localization.shared.set(.zhHans)
 check(RefreshRate.high.shortDescription == "每 0.5 秒更新", "high footer text")
-check(RefreshRate.normal.shortDescription == "每秒更新", "normal footer text")
+check(RefreshRate.normal.shortDescription == "每 1 秒更新", "normal footer text")
 check(RefreshRate.relaxed.shortDescription == "每 2 秒更新", "relaxed footer text")
 check(RefreshRate.low.shortDescription == "每 5 秒更新", "low footer text")
 // 两档文案若相同，用户改档后就看不出来，因此必须互不相同
 let descriptions = RefreshRate.allCases.map(\.shortDescription)
 check(Set(descriptions).count == RefreshRate.allCases.count, "every rate has a distinct footer text")
 check(RefreshRate.allCases.allSatisfy { !$0.shortDescription.isEmpty }, "footer text is never empty")
-// 文案里的秒数必须与 interval 吻合，防止改了 interval 忘了改文案。
-// 注意 1 秒档的文案是「每秒更新」，不含阿拉伯数字，所以单独约定：
-// 非 1 秒的档位文案必须出现对应的数字，1 秒档必须用「每秒」。
-for rate in RefreshRate.allCases where rate.interval != 1 {
-    let seconds = String(format: "%g", rate.interval)
-    check(rate.shortDescription.contains(seconds),
-          "footer text mentions \(seconds)s for \(rate.title)")
+// 文案里的秒数必须与 interval 吻合，防止改了 interval 忘了改文案
+for rate in RefreshRate.allCases {
+    check(rate.intervalText == (rate.interval == rate.interval.rounded()
+                                     ? String(Int(rate.interval)) : String(rate.interval)),
+          "interval text matches interval for \(rate.title)")
+    check(rate.shortDescription.contains(rate.intervalText),
+          "footer text mentions \(rate.intervalText) for \(rate.title)")
 }
-check(RefreshRate.normal.shortDescription.contains("每秒"),
-      "one-second rate footer says 每秒")
+// 英文下必须给出英文文案，且仍包含秒数
+Localization.shared.set(.en)
+check(RefreshRate.low.shortDescription.contains("5"), "english footer mentions seconds")
+check(RefreshRate.low.shortDescription.lowercased().contains("update"),
+      "english footer is translated")
+Localization.shared.set(.zhHans)
 
-print("119 metric checks passed")
+// ---- 国际化：三种语言的完整性 ----
+// 任何一个 key 缺译文，界面上就会露出 key 原文（或空白），因此在测试里锁死。
+let allLanguages: [AppLanguage] = [.zhHans, .zhHant, .en]
+for lang in allLanguages {
+    for key in StringKey.allCases {
+        let value = Strings.text(key, lang)
+        check(!value.isEmpty, "\(lang.rawValue) has text for \(key.rawValue)")
+        // 回落到 key 原文说明该语言缺这条译文
+        check(value != key.rawValue, "\(lang.rawValue) translated \(key.rawValue)")
+    }
+}
+// 简体与繁体不能整段相同（否则说明繁体的没真正翻译）。专有名词/单位允许相同，
+// 所以只要求「多数条目不同」，阈值取 60%。
+let zhKeys = StringKey.allCases
+let differing = zhKeys.filter { Strings.text($0, .zhHans) != Strings.text($0, .zhHant) }.count
+check(Double(differing) / Double(zhKeys.count) > 0.6,
+      "traditional Chinese is genuinely translated (differing \(differing)/\(zhKeys.count))")
+// 三种语言都必须至少有一条与英文不同（防止英文表被中文覆盖）
+check(zhKeys.contains { Strings.text($0, .en) != Strings.text($0, .zhHans) },
+      "english table is distinct from simplified Chinese")
+
+// 语言枚举与系统语言推断
+check(AppLanguage.allCases.count == 3, "three supported languages")
+check(AppLanguage.zhHans.nativeName == "简体中文", "simplified native name")
+check(AppLanguage.zhHant.nativeName == "繁體中文", "traditional native name")
+check(AppLanguage.en.nativeName == "English", "english native name")
+// 持久化值往返与脏数据回落
+check(AppLanguage.stored("zh-Hant") == .zhHant, "stored traditional round trips")
+check(AppLanguage.stored("en") == .en, "stored english round trips")
+check(AppLanguage.stored(nil) == nil, "missing stored language returns nil")
+check(AppLanguage.stored("fr") == nil, "unsupported language returns nil")
+
+// 带参数的文案：占位符必须被正确替换
+let loc = Localization(language: .zhHans, defaults: UserDefaults(suiteName: "test-i18n")!)
+check(loc.t(.updateAvailable, "0.1.2") == "发现新版本 v0.1.2", "formatted update available")
+check(loc.t(.appCacheDays, 30) == "应用列表缓存：30 天", "formatted cache days")
+loc.set(.en)
+check(loc.t(.updateAvailable, "0.1.2") == "Version v0.1.2 available", "english formatted text")
+check(loc.t(.appCacheDays, 30) == "App list cache: 30 days", "english formatted cache days")
+loc.set(.zhHant)
+check(loc.t(.healthCollecting) == "收集資料中", "traditional collecting text")
+// 切换语言后取值必须变化（否则界面不会刷新）
+let enValue = { () -> String in loc.set(.en); return loc.t(.settings) }()
+let zhValue = { () -> String in loc.set(.zhHans); return loc.t(.settings) }()
+check(enValue != zhValue, "switching language changes resolved text")
+
+print("152 metric checks passed")

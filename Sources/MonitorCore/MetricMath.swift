@@ -102,20 +102,27 @@ public enum HealthScore {
 
     public static func label(for score: Int) -> String {
         switch score {
-        case 90...: "极佳"
-        case 70..<90: "良好"
-        case 50..<70: "注意"
-        default: "偏高"
+        case 90...: Strings.current(.healthExcellent)
+        case 70..<90: Strings.current(.healthGood)
+        case 50..<70: Strings.current(.healthCaution)
+        default: Strings.current(.healthHigh)
         }
     }
 }
 
 public enum UptimeText {
-    public static func describe(seconds: TimeInterval) -> String? {
+    /// 纯时长文本（不含「已运行」之类的前缀），由调用方决定如何拼接。
+    public static func duration(seconds: TimeInterval) -> String? {
         guard seconds.isFinite, seconds >= 0 else { return nil }
         let days = Int(seconds / 86_400)
         let hours = Int(seconds.truncatingRemainder(dividingBy: 86_400) / 3_600)
-        return "\(days)天 \(hours)小时"
+        return Strings.current(.uptimeDuration, days, hours)
+    }
+
+    /// 带「已运行」前缀的完整描述。
+    public static func describe(seconds: TimeInterval) -> String? {
+        guard let duration = duration(seconds: seconds) else { return nil }
+        return Strings.current(.uptimeLabel, duration)
     }
 }
 

@@ -11,7 +11,7 @@ enum ProcessActions {
     static func reveal(_ target: ProcessReading) {
         // 只有真的是 .app 包内可执行文件，才谈得上「在访达中显示」。
         guard let url = appBundleURL(for: target), ProcessInspector.stillRunning(target) else {
-            alert("无法定位此进程的应用文件")
+            alert(Strings.current(.cannotLocateAppFile))
             return
         }
         NSWorkspace.shared.activateFileViewerSelecting([url])
@@ -26,7 +26,7 @@ enum ProcessActions {
 
     static func terminate(_ target: ProcessReading, force: Bool) {
         guard ProcessInspector.stillRunning(target) else {
-            alert("进程已经结束或 PID 已被其他进程使用")
+            alert(Strings.current(.processGone))
             return
         }
 
@@ -34,24 +34,28 @@ enum ProcessActions {
 
         if force {
             let dialog = NSAlert()
-            dialog.messageText = "强制退出 \(displayName)？"
-            dialog.informativeText = "PID \(target.pid) · 未保存的工作可能丢失。建议先尝试“终止”。"
-            dialog.addButton(withTitle: "取消")
-            dialog.addButton(withTitle: "强制退出")
+            dialog.messageText = Strings.current(.forceQuitPrompt, displayName)
+            dialog.informativeText = Strings.current(.forceQuitMessage, Int(target.pid))
+            dialog.addButton(withTitle: Strings.current(.cancel))
+            dialog.addButton(withTitle: Strings.current(.forceQuit))
             dialog.alertStyle = .warning
             guard dialog.runModal() == .alertSecondButtonReturn else { return }
             guard ProcessInspector.stillRunning(target) else {
-                alert("确认期间进程已经结束或 PID 已变化")
+                alert(Strings.current(.processChangedDuringConfirm))
                 return
             }
             // SIGKILL：进程无法拦截，一定退出。
-            if !ProcessInspector.signal(target.pid, SIGKILL) {
-                alert("无法强制退出 \(displayName)。\n\(ProcessInspector.signalErrorDescription())")
+            if let code = ProcessInspector.send(target.pid, SIGKILL) {
+                alert(Strings.current(.cannotForceTerminate,
+                                      displayName,
+                                      ProcessInspector.errorDescription(code)))
             }
         } else {
             // SIGTERM：给进程自行清理退出的机会（与「强制退出」的 SIGKILL 区分开）。
-            if !ProcessInspector.signal(target.pid, SIGTERM) {
-                alert("无法终止 \(displayName)。\n\(ProcessInspector.signalErrorDescription())")
+            if let code = ProcessInspector.send(target.pid, SIGTERM) {
+                alert(Strings.current(.cannotTerminate,
+                                      displayName,
+                                      ProcessInspector.errorDescription(code)))
             }
         }
     }
@@ -77,7 +81,7 @@ enum ProcessActions {
 
     private static func alert(_ text: String) {
         let dialog = NSAlert()
-        dialog.messageText = "操作未完成"
+        dialog.messageText = Strings.current(.operationIncomplete)
         dialog.informativeText = text
         dialog.runModal()
     }

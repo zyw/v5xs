@@ -1,9 +1,12 @@
 import AppKit
+import MonitorCore
 import SwiftUI
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private let store = MonitorStore()
+    /// 界面语言。与 Strings/Localization 共用同一实例，切换后所有窗口同步刷新。
+    private let localization = Localization.shared
     private let updates = UpdateChecker()
     private let statusItem = NSStatusBar.system.statusItem(withLength: 34)
     private let popover = NSPopover()
@@ -22,13 +25,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.openSettings()
             }, onOpenUninstaller: { [weak self] in
                 self?.openUninstaller()
-            })
+            }).localized(localization)
         )
         panelController.sizingOptions = [.preferredContentSize]
         popover.contentViewController = panelController
         statusItem.button?.image = StatusAnimal.image(animal: store.animal, frame: 0)
         statusItem.button?.imagePosition = .imageOnly
-        statusItem.button?.toolTip = "CPU 越忙，动物跑得越快；右键可更换形象"
+        statusItem.button?.toolTip = localization.t(.tooltipStatus)
         statusItem.button?.target = self
         statusItem.button?.action = #selector(statusClicked)
         statusItem.button?.sendAction(on: [.leftMouseUp, .rightMouseUp])
@@ -47,7 +50,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "v5xs 预览"
+            window.title = localization.t(.previewTitle)
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.contentView = NSHostingView(
@@ -110,36 +113,36 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showShortcutMenu() {
         let menu = NSMenu()
-        let open = NSMenuItem(title: "打开监控面板", action: #selector(openPanel), keyEquivalent: "")
+        let open = NSMenuItem(title: localization.t(.menuOpenPanel), action: #selector(openPanel), keyEquivalent: "")
         open.target = self
         menu.addItem(open)
-        let pause = NSMenuItem(title: "暂停图标动画", action: #selector(toggleAnimation), keyEquivalent: "")
+        let pause = NSMenuItem(title: localization.t(.menuPauseAnimation), action: #selector(toggleAnimation), keyEquivalent: "")
         pause.target = self
         pause.state = store.animationPaused ? .on : .off
         menu.addItem(pause)
         let animals = NSMenu()
         for animal in Animal.allCases {
-            let item = NSMenuItem(title: animal.rawValue, action: #selector(selectAnimal(_:)), keyEquivalent: "")
+            let item = NSMenuItem(title: animal.displayName, action: #selector(selectAnimal(_:)), keyEquivalent: "")
             item.target = self
             item.representedObject = animal.rawValue
             item.state = store.animal == animal ? .on : .off
             animals.addItem(item)
         }
-        let choice = NSMenuItem(title: "更换形象", action: nil, keyEquivalent: "")
+        let choice = NSMenuItem(title: localization.t(.menuChangeAnimal), action: nil, keyEquivalent: "")
         choice.submenu = animals
         menu.addItem(choice)
         menu.addItem(.separator())
-        let login = NSMenuItem(title: "登录时启动", action: #selector(toggleLogin), keyEquivalent: "")
+        let login = NSMenuItem(title: localization.t(.menuLoginAtStartup), action: #selector(toggleLogin), keyEquivalent: "")
         login.target = self
         login.state = store.launchAtLogin ? .on : .off
         menu.addItem(login)
         let check = NSMenuItem(title: updates.menuTitle, action: #selector(checkForUpdates), keyEquivalent: "")
         check.target = self
         menu.addItem(check)
-        let settings = NSMenuItem(title: "设置…", action: #selector(openSettings), keyEquivalent: "")
+        let settings = NSMenuItem(title: localization.t(.menuSettings), action: #selector(openSettings), keyEquivalent: "")
         settings.target = self
         menu.addItem(settings)
-        let quit = NSMenuItem(title: "退出", action: #selector(quitApp), keyEquivalent: "")
+        let quit = NSMenuItem(title: localization.t(.menuQuit), action: #selector(quitApp), keyEquivalent: "")
         quit.target = self
         menu.addItem(quit)
         statusItem.menu = menu
@@ -161,7 +164,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func toggleLogin() {
         do { try store.setLaunchAtLogin(!store.launchAtLogin) }
-        catch { showError("无法更改登录启动设置：\(error.localizedDescription)") }
+        catch { showError(localization.t(.cannotChangeLogin, error.localizedDescription)) }
     }
 
     @objc private func openSettings() {
@@ -182,7 +185,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 高度按内容自适应：Form 的固有高度会随分区数量与说明文字变化，
             // 写死窗口高度会在内容变多时立刻出现滚动条。这里用 NSHostingController
             // 上报首选尺寸，窗口直接取「内容高度」，默认打开时正好没有滚动条。
-            let controller = NSHostingController(rootView: SettingsPanel(store: store, updates: updates))
+            let controller = NSHostingController(
+                rootView: SettingsPanel(store: store, updates: updates, localization: localization)
+                    .localized(localization)
+            )
             controller.sizingOptions = [.preferredContentSize]
             let content = controller.preferredContentSize
             let contentHeight = content.height > 0 ? content.height : 620
@@ -201,7 +207,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             // 最小高度取「内容高度」与屏幕可用高度的较小值：内容不溢出时正好没有滚动条，
             // 屏幕太矮时也允许用户把窗口缩小到能放下为止。
             window.minSize = NSSize(width: 380, height: min(contentHeight, max(visible, 520)))
-            window.title = "v5xs 设置"
+            window.title = localization.t(.settingsTitle)
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.contentViewController = controller
@@ -218,7 +224,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "v5xs · 软件卸载"
+            window.title = localization.t(.uninstallerWindowTitle)
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.minSize = NSSize(width: 780, height: 560)
@@ -234,7 +240,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showError(_ message: String) {
         let alert = NSAlert()
-        alert.messageText = "操作失败"
+        alert.messageText = localization.t(.operationFailed)
         alert.informativeText = message
         alert.runModal()
     }

@@ -6,24 +6,25 @@ import SwiftUI
 /// 只做检查与跳转下载，不自动下载、不替换安装包。
 struct UpdateSection: View {
     @ObservedObject var updates: UpdateChecker
+    @Environment(\.localization) private var loc
 
     var body: some View {
-        Section("更新") {
+        Section(loc.t(.updateSection)) {
             HStack {
-                Text("当前版本")
+                Text(loc.t(.currentVersion))
                 Spacer()
-                Text("\(updates.currentVersionText)（build \(updates.currentBuild)）")
+                Text("\(updates.currentVersionText) (build \(updates.currentBuild))")
                     .foregroundStyle(.secondary)
             }
             statusRow
             HStack {
-                Text("上次检查")
+                Text(loc.t(.lastChecked))
                 Spacer()
                 Text(lastCheckText).foregroundStyle(.secondary)
             }
             HStack(spacing: 8) {
                 Button(action: { Task { await updates.check(force: true) } }) {
-                    Text("检查更新")
+                    Text(loc.t(.checkForUpdates))
                 }
                 .disabled(!updates.isEnabled || isChecking)
                 if isChecking {
@@ -31,7 +32,7 @@ struct UpdateSection: View {
                 }
                 Spacer()
                 if !updates.isEnabled {
-                    Text("未配置更新源")
+                    Text(loc.t(.updateNotConfiguredShort))
                         .font(.system(size: 10))
                         .foregroundStyle(.secondary)
                 }
@@ -39,7 +40,7 @@ struct UpdateSection: View {
             if case let .available(release, download) = updates.state {
                 availableDetail(release: release, download: download)
             }
-            Text("检查更新只读取更新清单并提示下载地址；安装仍由你手动完成。")
+            Text(loc.t(.updateFailedHint))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -56,17 +57,17 @@ struct UpdateSection: View {
             switch updates.state {
             case .idle:
                 Image(systemName: "circle.dashed").foregroundStyle(.secondary)
-                Text(updates.isEnabled ? "尚未检查" : "更新源未配置，暂不检查")
+                Text(updates.isEnabled ? loc.t(.updateIdle) : loc.t(.updateNotConfigured))
                     .foregroundStyle(.secondary)
             case .checking:
                 Image(systemName: "arrow.triangle.2.circlepath").foregroundStyle(.secondary)
-                Text("正在检查更新…").foregroundStyle(.secondary)
+                Text(loc.t(.updateChecking)).foregroundStyle(.secondary)
             case .upToDate:
                 Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
-                Text("已是最新版本")
+                Text(loc.t(.updateUpToDate))
             case .available(let release, _):
                 Image(systemName: "arrow.down.circle.fill").foregroundStyle(.tint)
-                Text("发现新版本 v\(release.version)").fontWeight(.semibold)
+                Text(loc.t(.updateAvailable, release.version)).fontWeight(.semibold)
             case .failed(let message):
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                 Text(message).foregroundStyle(.secondary).fixedSize(horizontal: false, vertical: true)
@@ -90,7 +91,7 @@ struct UpdateSection: View {
                     .foregroundStyle(.secondary)
             }
             Spacer()
-            Button("下载 DMG") { NSWorkspace.shared.open(download.url) }
+            Button(loc.t(.downloadDMG)) { NSWorkspace.shared.open(download.url) }
         }
         if let notes = release.notes, !notes.isEmpty {
             Text(notes)
@@ -102,7 +103,7 @@ struct UpdateSection: View {
     }
 
     private var lastCheckText: String {
-        guard let lastCheck = updates.lastCheck else { return "从未检查" }
+        guard let lastCheck = updates.lastCheck else { return loc.t(.neverChecked) }
         return lastCheck.formatted(date: .abbreviated, time: .shortened)
     }
 }

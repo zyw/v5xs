@@ -1,5 +1,6 @@
 import AppKit
 import CoreServices
+import MonitorCore
 import ServiceManagement
 import SwiftUI
 
@@ -109,8 +110,8 @@ enum StartupScanner {
             items.append(StartupItem(
                 id: "login-\(name)",
                 name: name,
-                detail: appURL?.lastPathComponent ?? "登录项 · 随系统启动",
-                path: "登录项",
+                detail: appURL?.lastPathComponent ?? Strings.current(.startupLoginItemAuto),
+                path: Strings.current(.startupLoginItemGeneric),
                 bundleIdentifier: nil,
                 source: .loginItem,
                 enabled: true,
@@ -318,8 +319,8 @@ private final class StartupModel: ObservableObject {
             load()
         } else {
             error = canToggle(item)
-                ? "无法修改 \(item.name) 的启用状态。系统代理与守护进程需要管理员权限。"
-                : "第三方登录项请在 系统设置 → 通用 → 登录项 中管理。"
+                ? Strings.current(.startupCannotToggle, item.name)
+                : Strings.current(.startupThirdPartyHint)
         }
     }
 
@@ -327,8 +328,10 @@ private final class StartupModel: ObservableObject {
     func grouped() -> [(String, [StartupItem])] {
         let order: [StartupItem.Source] = [.loginItem, .userAgent, .systemAgent, .daemon]
         let labels: [StartupItem.Source: String] = [
-            .loginItem: "用户登录项", .userAgent: "用户代理",
-            .systemAgent: "系统代理", .daemon: "守护进程"
+            .loginItem: Strings.current(.startupKindLoginItem),
+            .userAgent: Strings.current(.startupKindUserAgent),
+            .systemAgent: Strings.current(.startupKindSystemAgent),
+            .daemon: Strings.current(.startupKindDaemon)
         ]
         var result: [(String, [StartupItem])] = []
         for src in order {
@@ -361,20 +364,23 @@ struct StartupItemsPanel: View {
         .foregroundStyle(UninstallStyle.ink)
         .preferredColorScheme(.dark)
         .onAppear { if model.items.isEmpty { model.load() } }
-        .alert("操作失败", isPresented: Binding(
+        .alert(Strings.current(.operationFailed), isPresented: Binding(
             get: { model.error != nil },
             set: { if !$0 { model.error = nil } }
         )) {
-            Button("确定") { model.error = nil }
+            Button(Strings.current(.ok)) { model.error = nil }
         } message: { Text(model.error ?? "") }
     }
 
     private var dashboard: some View {
         HStack(spacing: 10) {
             if model.loading { ProgressView().controlSize(.small) }
-            statCard(title: "自启项", value: "\(model.items.count)", unit: "总计", color: .gray)
-            statCard(title: "已启用", value: "\(enabledCount)", unit: "随系统启动", color: .mint)
-            statCard(title: "需权限", value: "\(systemCount)", unit: "系统代理 / 守护", color: .amber)
+            statCard(title: Strings.current(.startupItems), value: "\(model.items.count)",
+                     unit: Strings.current(.startupTotal), color: .gray)
+            statCard(title: Strings.current(.enabled), value: "\(enabledCount)",
+                     unit: Strings.current(.startupEnabledAtBoot), color: .mint)
+            statCard(title: Strings.current(.startupNeedsPermission), value: "\(systemCount)",
+                     unit: Strings.current(.startupSystemAgentDaemon), color: .amber)
             Spacer()
             searchField
             refreshButton
@@ -421,7 +427,7 @@ struct StartupItemsPanel: View {
                 }
             }
         }
-        .help(model.loading ? "正在扫描…" : "重新扫描启动项")
+        .help(model.loading ? Strings.current(.scanInProgress) : Strings.current(.rescanStartupItems))
     }
 
     private var enabledCount: Int { model.items.filter { $0.enabled }.count }
@@ -454,7 +460,7 @@ struct StartupItemsPanel: View {
     private var searchField: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass").font(.system(size: 12)).foregroundStyle(UninstallStyle.faint)
-            TextField("搜索启动项", text: $query)
+            TextField(Strings.current(.searchStartupPlaceholder), text: $query)
                 .textFieldStyle(.plain).font(.system(size: 12.5)).foregroundStyle(UninstallStyle.ink)
         }
         .padding(.horizontal, 10).padding(.vertical, 7)
@@ -470,7 +476,7 @@ struct StartupItemsPanel: View {
                     groupSection(group.0, items: group.1)
                 }
                 if displayedGroups.isEmpty && !model.loading {
-                    Text("没有匹配的启动项").foregroundStyle(UninstallStyle.muted).padding(40)
+                    Text(Strings.current(.noMatchingStartupItems)).foregroundStyle(UninstallStyle.muted).padding(40)
                 }
             }
             .padding(18)
@@ -490,7 +496,7 @@ struct StartupItemsPanel: View {
             HStack {
                 Text(title.uppercased()).font(.system(size: 11, weight: .bold)).foregroundStyle(UninstallStyle.muted).tracking(0.5)
                 Spacer()
-                Text("\(items.count) 项").font(.system(size: 10)).foregroundStyle(UninstallStyle.faint)
+                Text(Strings.current(.itemsCount, items.count)).font(.system(size: 10)).foregroundStyle(UninstallStyle.faint)
             }
             .padding(.horizontal, 4)
             ForEach(items) { item in itemRow(item) }
@@ -531,10 +537,10 @@ struct StartupItemsPanel: View {
 
     private func sourceLabel(_ source: StartupItem.Source) -> String {
         switch source {
-        case .loginItem: return "登录项"
-        case .userAgent: return "用户代理"
-        case .systemAgent: return "系统代理"
-        case .daemon: return "守护进程"
+        case .loginItem: return Strings.current(.startupKindLoginItem)
+        case .userAgent: return Strings.current(.startupKindUserAgent)
+        case .systemAgent: return Strings.current(.startupKindSystemAgent)
+        case .daemon: return Strings.current(.startupKindDaemon)
         }
     }
 
@@ -548,7 +554,7 @@ struct StartupItemsPanel: View {
         .toggleStyle(SwitchToggleStyle(tint: UninstallStyle.mint))
         .disabled(!toggleable)
         .opacity(toggleable ? 1 : 0.4)
-        .help(toggleable ? "点击切换" : "第三方登录项请在系统设置中管理")
+        .help(toggleable ? Strings.current(.clickToToggle) : Strings.current(.startupThirdPartyHint))
     }
 
     private func infoButton(_ item: StartupItem) -> some View {
@@ -557,7 +563,7 @@ struct StartupItemsPanel: View {
         } label: {
             Image(systemName: "info.circle").font(.system(size: 12)).foregroundStyle(UninstallStyle.faint)
         }
-        .buttonStyle(.plain).help("在访达中显示")
+        .buttonStyle(.plain).help(Strings.current(.revealInFinder))
     }
 
     private func revealInFinder(_ item: StartupItem) {
@@ -567,10 +573,10 @@ struct StartupItemsPanel: View {
 
     private var footer: some View {
         HStack {
-            Text("启动项指随系统登录自动运行的程序。系统代理与守护进程需要更高权限。")
+            Text(Strings.current(.startupFooterNote))
                 .font(.system(size: 11.5)).foregroundStyle(UninstallStyle.faint)
             Spacer()
-            Text("开关会实际修改 LaunchAgent").font(.system(size: 11)).foregroundStyle(UninstallStyle.amber)
+            Text(Strings.current(.startupToggleWarning)).font(.system(size: 11)).foregroundStyle(UninstallStyle.amber)
         }
         .padding(.horizontal, 24).padding(.vertical, 12)
         .frame(maxWidth: .infinity)

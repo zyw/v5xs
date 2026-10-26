@@ -27,35 +27,31 @@ public enum RefreshRate: String, CaseIterable, Sendable {
         }
     }
 
-    /// 设置页里展示的名称。
+    /// 秒数的本地化写法（"0.5" / "1" / "2" / "5"）。
+    /// 数字用 %@ 传给译文，让各语言自行决定单位与措辞（如英文 "every 2 s"）。
+    public var intervalText: String {
+        interval == interval.rounded() ? String(Int(interval)) : String(interval)
+    }
+
+    /// 设置页里展示的名称（跟随当前界面语言）。
     public var title: String {
+        let unit = intervalText
         switch self {
-        case .high: return "极快（0.5 秒）"
-        case .normal: return "标准（1 秒）"
-        case .relaxed: return "平稳（2 秒）"
-        case .low: return "省电（5 秒）"
+        case .high: return Strings.current(.rateFastestTitle, unit)
+        case .normal: return Strings.current(.rateStandardTitle, unit)
+        case .relaxed: return Strings.current(.rateRelaxedTitle, unit)
+        case .low: return Strings.current(.ratePowerSaverTitle, unit)
         }
     }
 
     /// 面板底部状态栏用的简短描述，需与 `interval` 保持一致。
-    /// 单独提供而不是从 title 截取，是为了让底部文案能独立调整措辞。
     public var shortDescription: String {
-        switch self {
-        case .high: return "每 0.5 秒更新"
-        case .normal: return "每秒更新"
-        case .relaxed: return "每 2 秒更新"
-        case .low: return "每 5 秒更新"
-        }
+        Strings.current(.rateUpdateEvery, intervalText)
     }
 
     /// 说明该档位的取舍，显示在设置页的说明文字里。
     public var detail: String {
-        switch self {
-        case .high: return "每 0.5 秒采样，曲线最细腻，CPU 开销最高。"
-        case .normal: return "每秒采样，兼顾精度与开销。"
-        case .relaxed: return "每 2 秒采样，开销更低，适合日常查看。"
-        case .low: return "每 5 秒采样，最省电，只反映趋势。"
-        }
+        Strings.current(.rateDetail, intervalText)
     }
 
     /// 从持久化值还原；无法识别时回落到默认档，避免旧数据或手改 plist 让采样停摆。

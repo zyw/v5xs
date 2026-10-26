@@ -20,6 +20,7 @@ private enum Palette {
 struct MonitorPanel: View {
     @ObservedObject var store: MonitorStore
     @ObservedObject var updates: UpdateChecker
+    @Environment(\.localization) private var loc
     let onOpenSettings: () -> Void
     let onOpenUninstaller: () -> Void
     @State private var headerHovering = false
@@ -47,13 +48,15 @@ struct MonitorPanel: View {
             privacyStrip
             processCard
             HStack {
-                Button("设置", action: onOpenSettings)
+                Button(loc.t(.settings), action: onOpenSettings)
                 Spacer()
-                // 跟随设置页里选择的刷新频率，不要写死「每秒更新」。
-                Text("\(updates.currentVersionText) · \(store.refreshRate.shortDescription)")
+                // 版本号与刷新频率都会变，用 %@ 占位让各语言自行排版。
+                Text(loc.t(.footerFormat,
+                           updates.currentVersionText,
+                           store.refreshRate.shortDescription))
                     .foregroundStyle(Palette.muted)
                 Spacer()
-                Button("退出") { NSApp.terminate(nil) }
+                Button(loc.t(.quit)) { NSApp.terminate(nil) }
             }
             .font(.system(size: 10))
             .buttonStyle(.plain)
@@ -73,20 +76,20 @@ struct MonitorPanel: View {
                     .foregroundStyle(Palette.amber)
                 Text(store.healthScore.map(String.init) ?? "—")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
-                Text(store.healthScore.map(HealthScore.label(for:)) ?? "采集中")
+                Text(store.healthScore.map(HealthScore.label(for:)) ?? loc.t(.healthCollecting))
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(Palette.muted)
                 Spacer()
             }
             HStack(spacing: 5) {
-                badge(store.chipName ?? "芯片未知")
+                badge(store.chipName ?? loc.t(.chipUnknown))
                 badge("\(store.machine.memoryBytes / 1_073_741_824) GB")
                 let version = ProcessInfo.processInfo.operatingSystemVersion
                 badge("macOS \(version.majorVersion).\(version.minorVersion)")
                 let uptime = store.machine.bootTime.flatMap {
                     UptimeText.describe(seconds: Date().timeIntervalSince($0))
-                } ?? "—"
-                badge("已运行 \(uptime)")
+                } ?? loc.t(.notAvailable)
+                badge(uptime)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -98,7 +101,7 @@ struct MonitorPanel: View {
         )
         .overlay(alignment: .topTrailing) {
             if headerHovering {
-                Text("软件卸载 ↗")
+                Text(loc.t(.softwareUninstallArrow))
                     .font(.system(size: 10, weight: .semibold))
                     .foregroundStyle(Palette.mint)
                     .padding(.horizontal, 8).padding(.vertical, 4)
@@ -114,8 +117,8 @@ struct MonitorPanel: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint("打开软件卸载窗口")
-        .help("点按综合评分打开软件卸载；评分由系统热状态、CPU 使用率和内存占用估算，缺少数据时显示破折号")
+        .accessibilityHint(loc.t(.openUninstallerHint))
+        .help(loc.t(.uninstallHint))
     }
 
     private func badge(_ text: String) -> some View {
@@ -126,11 +129,12 @@ struct MonitorPanel: View {
     }
 
     private var cpuCard: some View {
-        MetricCard(title: "CPU", accessory: cpuCoreText) {
-            Text(store.cpu.map { "\(Int($0.rounded()))%" } ?? "—")
+        MetricCard(title: loc.t(.cpu), accessory: cpuCoreText) {
+            Text(store.cpu.map { "\(Int($0.rounded()))%" } ?? loc.t(.notAvailable))
                 .font(.system(size: 25, weight: .bold, design: .rounded))
             Chart(store.cpuHistory.suffix(60)) { point in
-                LineMark(x: .value("时间", point.time), y: .value("占用", point.value))
+                LineMark(x: .value(loc.t(.timeAxis), point.time),
+                         y: .value(loc.t(.usageAxis), point.value))
                     .foregroundStyle(Palette.mint)
                     .interpolationMethod(.catmullRom)
             }
@@ -144,27 +148,29 @@ struct MonitorPanel: View {
     private var cpuCoreText: String {
         if let performance = store.machine.performanceCores,
            let efficiency = store.machine.efficiencyCores {
-            return "\(store.machine.cpuCores) 核 · \(performance)P + \(efficiency)E"
+            return loc.t(.coresPerfEff, store.machine.cpuCores, performance, efficiency)
         }
-        return "\(store.machine.cpuCores) 核"
+        return loc.t(.coresLabel, store.machine.cpuCores)
     }
 
     private var gpuCard: some View {
-        MetricCard(title: "GPU 活跃度", accessory: store.gpuCores.map { "\($0) 核" } ?? "核数未知") {
+        MetricCard(title: loc.t(.gpuActivity),
+                   accessory: store.gpuCores.map { loc.t(.coresLabel, $0) } ?? loc.t(.gpuCoresUnknown)) {
             Text(store.gpuUsage.map { "\(Int($0.rounded()))%" } ?? "—")
                 .font(.system(size: 25, weight: .bold, design: .rounded))
             if store.gpuUsage != nil {
                 Chart(store.gpuHistory) { point in
-                    LineMark(x: .value("时间", point.time), y: .value("占用", point.value))
+                    LineMark(x: .value(loc.t(.timeAxis), point.time),
+                             y: .value(loc.t(.usageAxis), point.value))
                         .foregroundStyle(Palette.blue)
                 }
                 .chartYScale(domain: 0...100)
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
                 .frame(height: 21)
-                .accessibilityLabel("GPU 活跃度历史曲线")
+                .accessibilityLabel(loc.t(.gpuActivityHistory))
             } else {
-                Text("当前设备未提供 GPU 活跃度")
+                Text(loc.t(.gpuNotAvailable))
                     .font(.system(size: 9))
                     .foregroundStyle(Palette.muted)
                     .frame(maxWidth: .infinity, minHeight: 21, alignment: .bottomLeading)
@@ -174,30 +180,31 @@ struct MonitorPanel: View {
     }
 
     private var memoryCard: some View {
-        MetricCard(title: "内存", accessory: "") {
+        MetricCard(title: loc.t(.memory), accessory: "") {
             Text(store.memoryUsed.map { ByteCountFormatter.string(fromByteCount: Int64($0), countStyle: .memory) } ?? "—")
                 .font(.system(size: 19, weight: .bold, design: .rounded))
             ProgressView(value: min(Double(store.memoryUsed ?? 0) / Double(max(store.machine.memoryBytes, 1)), 1))
                 .tint(Palette.mint)
                 .controlSize(.mini)
-            Text("总计 \(ByteCountFormatter.string(fromByteCount: Int64(store.machine.memoryBytes), countStyle: .memory))")
+            Text(loc.t(.totalLabel,
+                        ByteCountFormatter.string(fromByteCount: Int64(store.machine.memoryBytes), countStyle: .memory)))
                 .font(.system(size: 9))
                 .foregroundStyle(Palette.muted)
         }
     }
 
     private var diskCard: some View {
-        MetricCard(title: "可用空间", accessory: store.diskTotal.map {
-            "总计 \(ByteCountFormatter.string(fromByteCount: $0, countStyle: .file))"
-        } ?? "总计 —", symbol: "internaldrive") {
+        MetricCard(title: loc.t(.freeSpace), accessory: store.diskTotal.map {
+            loc.t(.totalLabel, ByteCountFormatter.string(fromByteCount: $0, countStyle: .file))
+        } ?? loc.t(.totalLabel, loc.t(.notAvailable)), symbol: "internaldrive") {
             Text(store.diskAvailable.map { ByteCountFormatter.string(fromByteCount: $0, countStyle: .file) } ?? "—")
                 .font(.system(size: 19, weight: .bold, design: .rounded))
             ProgressView(value: diskUsedFraction)
                 .tint(Palette.blue)
                 .controlSize(.mini)
-                .accessibilityLabel("磁盘已用空间")
+                .accessibilityLabel(loc.t(.diskUsedA11y))
                 .accessibilityValue("\(Int(diskUsedFraction * 100))%")
-            Text("读 \(rate(store.diskRead)) · 写 \(rate(store.diskWrite))")
+            Text(loc.t(.readWrite, rate(store.diskRead), rate(store.diskWrite)))
                 .font(.system(size: 9))
                 .foregroundStyle(Palette.muted)
                 .lineLimit(1)
@@ -214,7 +221,7 @@ struct MonitorPanel: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: "globe").foregroundStyle(Palette.blue)
-                Text("网络").font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted)
+                Text(loc.t(.network)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted)
                 Spacer()
                 badge(store.networkType)
             }
@@ -222,18 +229,20 @@ struct MonitorPanel: View {
                 .font(.system(size: 22, weight: .bold, design: .rounded))
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-                .accessibilityLabel("下载 \(rate(store.download))")
+                .accessibilityLabel(loc.t(.downloadRateA11y, rate(store.download)))
             if chartPoints.isEmpty {
-                Text("等待网络采样…")
+                Text(loc.t(.waitingNetwork))
                     .font(.system(size: 9))
                     .foregroundStyle(Palette.muted)
                     .frame(maxWidth: .infinity, minHeight: 30)
             } else {
                 Chart {
                     ForEach(chartPoints) { point in
-                        LineMark(x: .value("时间", point.time), y: .value("下载", point.download))
+                        LineMark(x: .value(loc.t(.timeAxis), point.time),
+                                 y: .value(loc.t(.downloadAxis), point.download))
                             .foregroundStyle(Palette.mint)
-                        LineMark(x: .value("时间", point.time), y: .value("上传", point.upload))
+                        LineMark(x: .value(loc.t(.timeAxis), point.time),
+                                 y: .value(loc.t(.uploadAxis), point.upload))
                             .foregroundStyle(Palette.blue)
                     }
                 }
@@ -241,18 +250,18 @@ struct MonitorPanel: View {
                 .chartXAxis(.hidden)
                 .chartYAxis(.hidden)
                 .frame(height: 30)
-                .accessibilityLabel("过去一分钟的网络下载与上传曲线")
+                .accessibilityLabel(loc.t(.networkCurveA11y))
             }
             HStack {
-                Text("上传 \(rate(store.upload))")
+                Text(loc.t(.uploadRate, rate(store.upload)))
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
                 Spacer()
                 // 刷新频率已移到设置页统一配置；这里只做状态展示，
                 // 避免同一设置出现两个入口、两处状态可能不同步。
-                Text("刷新 \(store.refreshRate.title)")
+                Text(loc.t(.footerFormat, loc.t(.refresh), store.refreshRate.title))
                     .lineLimit(1)
-                    .help("在设置页可以调整监测刷新频率")
+                    .help(loc.t(.refreshRateA11y))
             }
             .font(.system(size: 9))
             .foregroundStyle(Palette.muted)
@@ -265,20 +274,21 @@ struct MonitorPanel: View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
                 Image(systemName: "thermometer.medium").foregroundStyle(Palette.mint)
-                Text("温度").font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted)
+                Text(loc.t(.temperature)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted)
                 Spacer()
                 badge(store.thermalDescription)
             }
             Text(temperature(store.cpuTemperature))
                 .font(.system(size: 22, weight: .bold, design: .rounded))
-                .accessibilityLabel("CPU 温度 \(temperature(store.cpuTemperature))")
+                .accessibilityLabel(loc.t(.cpuTempA11y, temperature(store.cpuTemperature)))
             ProgressView(value: min(max((store.cpuTemperature ?? 0) / 110, 0), 1))
                 .tint(Palette.mint)
                 .controlSize(.mini)
                 .frame(height: 30)
-                .accessibilityLabel("CPU 温度比例")
+                .accessibilityLabel(loc.t(.cpuTempRatioA11y))
                 .accessibilityValue(temperature(store.cpuTemperature))
-            Text("GPU \(temperature(store.gpuTemperature)) · \(store.chipName ?? "—")")
+            Text(loc.t(.footerFormat, loc.t(.gpu, temperature(store.gpuTemperature)),
+                        store.chipName ?? loc.t(.notAvailable)))
                 .font(.system(size: 9))
                 .foregroundStyle(Palette.muted)
                 .lineLimit(1)
@@ -299,24 +309,24 @@ struct MonitorPanel: View {
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Circle().fill(store.camInUse ? Palette.blue : Color.white.opacity(0.22)).frame(width: 7, height: 7)
-                    Text("摄像头").font(.system(size: 11, weight: .semibold)).foregroundStyle(store.camInUse ? Palette.blue : Palette.muted)
+                    Text(loc.t(.privacyCamera)).font(.system(size: 11, weight: .semibold)).foregroundStyle(store.camInUse ? Palette.blue : Palette.muted)
                 }
-                Text(store.camInUse ? (store.camProcess ?? "有其他进程在访问") : "空闲")
+                Text(store.camInUse ? (store.camProcess ?? loc.t(.privacyInUseByOther)) : loc.t(.privacyIdle))
                     .font(.system(size: 9)).foregroundStyle(Palette.muted)
             }
             Rectangle().fill(Color.white.opacity(0.1)).frame(width: 1, height: 30)
             VStack(alignment: .leading, spacing: 3) {
                 HStack(spacing: 8) {
                     Circle().fill(store.micInUse ? Palette.amber : Color.white.opacity(0.22)).frame(width: 7, height: 7)
-                    Text("麦克风").font(.system(size: 11, weight: .semibold)).foregroundStyle(store.micInUse ? Palette.amber : Palette.muted)
+                    Text(loc.t(.privacyMicrophone)).font(.system(size: 11, weight: .semibold)).foregroundStyle(store.micInUse ? Palette.amber : Palette.muted)
                 }
-                Text(store.micInUse ? (store.micProcess ?? "有其他进程在访问") : "空闲")
+                Text(store.micInUse ? (store.micProcess ?? loc.t(.privacyInUseByOther)) : loc.t(.privacyIdle))
                     .font(.system(size: 9)).foregroundStyle(Palette.muted)
             }
             Spacer(minLength: 4)
             VStack(alignment: .trailing, spacing: 4) {
-                Text(store.camInUse ? "相机在用" : "相机空闲").foregroundStyle(store.camInUse ? Palette.blue : Palette.muted)
-                Text(store.micInUse ? "麦克风在用" : "麦克风空闲").foregroundStyle(store.micInUse ? Palette.amber : Palette.muted)
+                Text(loc.t(store.camInUse ? .camInUse : .camIdle)).foregroundStyle(store.camInUse ? Palette.blue : Palette.muted)
+                Text(loc.t(store.micInUse ? .micInUse : .micIdle)).foregroundStyle(store.micInUse ? Palette.amber : Palette.muted)
             }
             .font(.system(size: 10, weight: .semibold))
         }
@@ -326,9 +336,9 @@ struct MonitorPanel: View {
     private var batteryCard: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack {
-                Text("电量").font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted)
+                Text(loc.t(.battery)).font(.system(size: 11, weight: .semibold)).foregroundStyle(Palette.muted)
                 Spacer()
-                Text("本机与已连接外设")
+                Text(loc.t(.localAndPeripherals))
                     .font(.system(size: 9))
                     .foregroundStyle(Palette.muted)
             }
@@ -338,15 +348,17 @@ struct MonitorPanel: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("MacBook").font(.system(size: 10)).foregroundStyle(Palette.muted)
-                    Text(store.batteryPercentage.map { "\($0)%" } ?? "—")
+                    Text(store.batteryPercentage.map { "\($0)%" } ?? loc.t(.notAvailable))
                         .font(.system(size: 22, weight: .bold, design: .rounded))
                     Text(store.batteryStatus).font(.system(size: 9)).foregroundStyle(Palette.muted)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 Divider().frame(height: 44)
                 HStack(spacing: 14) {
-                    BatteryRing(symbol: "magicmouse.fill", name: "鼠标", percentage: peripheral(kind: .mouse)?.percentage)
-                    BatteryRing(symbol: "keyboard.fill", name: "键盘", percentage: peripheral(kind: .keyboard)?.percentage)
+                    BatteryRing(symbol: "magicmouse.fill", name: loc.t(.mouse),
+                                percentage: peripheral(kind: .mouse)?.percentage)
+                    BatteryRing(symbol: "keyboard.fill", name: loc.t(.keyboard),
+                                percentage: peripheral(kind: .keyboard)?.percentage)
                 }
                 .fixedSize()
                 // 环缩小后右侧会多出空白，稍加右内边距让整体在卡片里居中。
@@ -368,10 +380,10 @@ struct MonitorPanel: View {
             // 与 ProcessRow 保持同一套水平内边距与列间距，否则「内存 / CPU」
             // 表头会和下面的数值列错开 5pt。
             HStack(spacing: 5) {
-                Text("高占用进程").font(.system(size: 11, weight: .semibold))
+                Text(loc.t(.highUsageProcesses)).font(.system(size: 11, weight: .semibold))
                 Spacer()
-                Text("内存").frame(width: 70, alignment: .trailing)
-                Text("CPU").frame(width: 48, alignment: .trailing)
+                Text(loc.t(.memoryColumn)).frame(width: 70, alignment: .trailing)
+                Text(loc.t(.cpuColumn)).frame(width: 48, alignment: .trailing)
                 Button { store.refreshProcesses() } label: {
                     Image(systemName: "arrow.clockwise")
                 }
@@ -379,13 +391,13 @@ struct MonitorPanel: View {
                     .buttonStyle(.plain)
                     .foregroundStyle(Palette.mint)
                     .frame(width: 22)
-                    .accessibilityLabel("刷新进程列表")
+                    .accessibilityLabel(loc.t(.refreshProcessList))
             }
             .font(.system(size: 9))
             .foregroundStyle(Palette.muted)
             .padding(.horizontal, 5)
             if store.processes.isEmpty {
-                Text("当前无法读取进程列表")
+                Text(loc.t(.processListUnavailable))
                     .font(.system(size: 10))
                     .foregroundStyle(Palette.dim)
                     .padding(.horizontal, 5)
@@ -446,6 +458,7 @@ private struct BatteryRing: View {
     /// 收到 34pt 后与外设文字行、左侧 MacBook 百分比在视觉上齐平。
     private let diameter: CGFloat = 34
     private let lineWidth: CGFloat = 4
+    @Environment(\.localization) private var loc
 
     var body: some View {
         VStack(spacing: 2) {
@@ -462,13 +475,15 @@ private struct BatteryRing: View {
                     .foregroundStyle(.white.opacity(0.8))
             }
             .frame(width: diameter, height: diameter)
-            Text("\(name) \(percentage.map { "\($0)%" } ?? "—")")
+            Text("\(name) \(percentage.map { "\($0)%" } ?? loc.t(.notAvailable))")
                 .font(.system(size: 9))
                 .foregroundStyle(Palette.muted)
                 .fixedSize()
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(name)电量\(percentage.map { "\($0)%" } ?? "未知")")
+        .accessibilityLabel(loc.t(.batteryPercentA11y,
+                                    name,
+                                    percentage.map { "\($0)%" } ?? loc.t(.unknown)))
     }
 }
 
@@ -476,6 +491,7 @@ private struct ProcessRow: View {
     let process: ProcessReading
     let onAction: () -> Void
     @State private var hovering = false
+    @Environment(\.localization) private var loc
 
     /// CPU 超过阈值时才用琥珀色提醒；其余连同进程名一起走暗色，整体压低亮度。
     private var cpuColor: Color { process.cpuPercent > 50 ? Palette.amber : Palette.dim }
@@ -494,15 +510,15 @@ private struct ProcessRow: View {
                 .frame(width: 48, alignment: .trailing)
                 .foregroundStyle(cpuColor)
             Menu {
-                Button("在访达中显示") { ProcessActions.reveal(process) }
-                Button("复制进程名称") { ProcessActions.copy(process.name) }
-                Button("复制 PID") { ProcessActions.copy("\(process.pid)") }
+                Button(loc.t(.revealInFinder)) { ProcessActions.reveal(process) }
+                Button(loc.t(.copyProcessName)) { ProcessActions.copy(process.name) }
+                Button(loc.t(.copyPID)) { ProcessActions.copy("\(process.pid)") }
                 Divider()
                 // 用 ProcessInspector（libproc）判断可用性：NSRunningApplication 对
                 // 非 GUI 进程恒为 nil，曾导致进程榜里绝大多数条目无法操作。
-                Button("终止") { ProcessActions.terminate(process, force: false); onAction() }
+                Button(loc.t(.terminate)) { ProcessActions.terminate(process, force: false); onAction() }
                     .disabled(!ProcessActions.canTerminate(process))
-                Button("强制退出…", role: .destructive) {
+                Button(loc.t(.forceQuit) + "…", role: .destructive) {
                     ProcessActions.terminate(process, force: true)
                     onAction()
                 }
@@ -518,7 +534,7 @@ private struct ProcessRow: View {
             // 悬停时才点亮操作入口；非悬停保持克制，避免整列图标抢视线。
             .foregroundStyle(hovering ? Palette.mint : Palette.dim)
             .opacity(hovering ? 1 : 0.7)
-            .accessibilityLabel("\(process.name)操作")
+            .accessibilityLabel(loc.t(.processMenuLabel, process.name))
         }
         .font(.system(size: 10, weight: .medium))
         .padding(.horizontal, 5)
@@ -543,59 +559,205 @@ private extension View {
     }
 }
 
+/// 设置页的分区。项目变多后单页 Form 会很长，改为左侧导航 + 右侧内容。
+enum SettingsSection: String, CaseIterable, Identifiable {
+    case general, monitoring, update, language, about
+    var id: String { rawValue }
+
+    func title(_ loc: Localization) -> String {
+        switch self {
+        case .general: return loc.t(.settingsGeneral)
+        case .monitoring: return loc.t(.settingsMonitoring)
+        case .update: return loc.t(.settingsUpdate)
+        case .language: return loc.t(.settingsLanguage)
+        case .about: return loc.t(.settingsAbout)
+        }
+    }
+
+    /// 导航项图标，便于快速定位。
+    var symbol: String {
+        switch self {
+        case .general: return "slider.horizontal.3"
+        case .monitoring: return "waveform.path.ecg"
+        case .update: return "arrow.triangle.2.circlepath"
+        case .language: return "globe"
+        case .about: return "info.circle"
+        }
+    }
+}
+
 struct SettingsPanel: View {
     @ObservedObject var store: MonitorStore
     @ObservedObject var updates: UpdateChecker
+    @ObservedObject var localization: Localization
+    @State private var selection: SettingsSection = .general
 
     private var cacheDays: Int { Int(store.appCacheDays.rounded()) }
 
     var body: some View {
+        HStack(spacing: 0) {
+            sidebar
+            Divider()
+            content
+        }
+        .frame(minWidth: 560, idealWidth: 620, maxWidth: .infinity,
+               minHeight: 380, idealHeight: 440, maxHeight: .infinity)
+    }
+
+    private var sidebar: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(SettingsSection.allCases) { section in
+                SidebarRow(section: section,
+                           isSelected: selection == section,
+                           title: section.title(localization)) {
+                    selection = section
+                }
+            }
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .frame(width: 168)
+        .background(Palette.background.opacity(0.35))
+    }
+
+    /// 右侧内容随选中分区切换；每个分区各自是一个 grouped Form。
+    @ViewBuilder
+    private var content: some View {
+        switch selection {
+        case .general: generalPage
+        case .monitoring: monitoringPage
+        case .update: updatePage
+        case .language: languagePage
+        case .about: aboutPage
+        }
+    }
+
+    private var generalPage: some View {
         Form {
-            Picker("菜单栏动物", selection: $store.animal) {
+            Picker(localization.t(.menuBarAnimal), selection: $store.animal) {
+                // 显示本地化名称，tag 仍然是持久化标识
                 ForEach(Animal.allCases) { animal in
-                    Text(animal.rawValue).tag(animal)
+                    Text(animal.displayName).tag(animal)
                 }
             }
-            Toggle("暂停动画", isOn: $store.animationPaused)
-            Text("减少动态效果开启时，图标会保持静态。")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            Section {
-                Picker("监测刷新频率", selection: $store.refreshRate) {
-                    ForEach(RefreshRate.allCases, id: \.self) { rate in
-                        Text(rate.title).tag(rate)
-                    }
-                }
-                Text(store.refreshRate.detail + "改动立即生效。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            } header: {
-                Text("监测")
-            } footer: {
-                Text("频率越高曲线越细腻，但采样本身也会占用少量 CPU。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            Section {
-                Stepper("应用列表缓存：\(cacheDays) 天", value: $store.appCacheDays, in: 1...365, step: 1)
-                Text("首次打开卸载窗口扫描并缓存已安装应用；缓存期内再次打开直接读取，手动刷新会用最新数据重建缓存。")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            UpdateSection(updates: updates)
-
-            Text("GPU 活跃度按设备支持情况显示；CPU／GPU 温度仅在已验证的 Mac14,2 上读取。")
+            Toggle(localization.t(.pauseAnimation), isOn: $store.animationPaused)
+            Text(localization.t(.pauseAnimationHint))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .formStyle(.grouped)
-        .padding(10)
-        // 不要在这里写死 minHeight：Form 自身的高度才是「不出现滚动条」的依据，
-        // 窗口大小由 AppDelegate 依据 preferredContentSize 决定。
-        .frame(minWidth: 380, idealWidth: 440, maxWidth: .infinity)
-        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var monitoringPage: some View {
+        Form {
+            Section {
+                Picker(localization.t(.refreshRate), selection: $store.refreshRate) {
+                    ForEach(RefreshRate.allCases, id: \.self) { rate in
+                        Text(rate.title).tag(rate)
+                    }
+                }
+                Text(store.refreshRate.detail + localization.t(.refreshRateHint))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            } footer: {
+                Text(localization.t(.refreshRateFooter))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Stepper(localization.t(.appCacheDays, cacheDays),
+                        value: $store.appCacheDays, in: 1...365, step: 1)
+                Text(localization.t(.appCacheHint))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+    }
+
+    private var updatePage: some View {
+        Form {
+            UpdateSection(updates: updates)
+        }
+        .formStyle(.grouped)
+    }
+
+    private var languagePage: some View {
+        Form {
+            Picker(localization.t(.language), selection: Binding(
+                get: { localization.language },
+                set: { localization.set($0) }
+            )) {
+                ForEach(AppLanguage.allCases) { language in
+                    Text(language.nativeName).tag(language)
+                }
+            }
+            Text(localization.t(.languageHint))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Text(localization.t(.languageRestartHint))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .formStyle(.grouped)
+    }
+
+    private var aboutPage: some View {
+        Form {
+            LabeledContent(localization.t(.aboutVersion), value: updates.currentVersionText)
+            LabeledContent(localization.t(.aboutSystem), value: runtimeSystemText)
+            LabeledContent(localization.t(.aboutCpu), value: store.chipName ?? localization.t(.unknown))
+            LabeledContent(localization.t(.aboutUptime), value: uptimeText)
+            Text(localization.t(.gpuTemperatureHint))
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .formStyle(.grouped)
+    }
+
+    private var runtimeSystemText: String {
+        let version = ProcessInfo.processInfo.operatingSystemVersion
+        return "macOS \(version.majorVersion).\(version.minorVersion)"
+    }
+
+    private var uptimeText: String {
+        guard let boot = store.machine.bootTime else { return localization.t(.notAvailable) }
+        return UptimeText.duration(seconds: Date().timeIntervalSince(boot))
+            ?? localization.t(.notAvailable)
+    }
+}
+
+/// 左侧导航的一行。用自定义样式而不是 List(selection:)，
+/// 是为了在浅色/深色下都能得到一致的圆角选中态。
+private struct SidebarRow: View {
+    let section: SettingsSection
+    let isSelected: Bool
+    let title: String
+    let action: () -> Void
+    @State private var hovering = false
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 7) {
+                Image(systemName: section.symbol)
+                    .font(.system(size: 11))
+                    .frame(width: 16)
+                Text(title).font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 5)
+            .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.85))
+            .background(
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(isSelected ? Color.accentColor
+                          : (hovering ? Color.primary.opacity(0.07) : Color.clear))
+            )
+            .contentShape(RoundedRectangle(cornerRadius: 6))
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

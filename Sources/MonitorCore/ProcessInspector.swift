@@ -48,22 +48,26 @@ public enum ProcessInspector {
     }
 
     /// 发送信号。返回是否成功；失败原因见 `signalErrorDescription`。
-    @discardableResult
-    public static func signal(_ pid: Int32, _ sig: Int32) -> Bool {
-        kill(pid, sig) == 0
+    /// 发送信号。成功返回 nil，失败返回 errno（由调用方按当前语言组装提示）。
+    /// 用返回值而不是静态可变状态传递错误，避免 Swift 6 的并发隔离问题，
+    /// 也顺带消除了多线程下读到别人 errno 的窗口。
+    public static func send(_ pid: Int32, _ sig: Int32) -> Int32? {
+        kill(pid, sig) == 0 ? nil : errno
     }
 
-    /// 把 errno 翻译成面向用户的中文说明。
-    public static func signalErrorDescription() -> String {
-        switch errno {
-        case EPERM:
-            return "权限不足：该进程属于其他用户或受系统保护，需要在「系统设置 → 隐私与安全性 → App 管理/辅助功能」中授权，或以管理员身份运行。"
-        case ESRCH:
-            return "进程已经结束。"
-        case EINVAL:
-            return "无效的信号。"
-        default:
-            return "信号发送失败（errno \(errno)）。"
+    /// 兼容旧的布尔式调用。
+    @discardableResult
+    public static func signal(_ pid: Int32, _ sig: Int32) -> Bool {
+        send(pid, sig) == nil
+    }
+
+    /// 把 errno 翻译成面向用户的说明（跟随当前界面语言）。
+    public static func errorDescription(_ code: Int32) -> String {
+        switch code {
+        case EPERM: return Strings.current(.permissionDenied)
+        case ESRCH: return Strings.current(.processAlreadyExited)
+        case EINVAL: return Strings.current(.invalidSignal)
+        default: return Strings.current(.signalFailed, Int(code))
         }
     }
 }
