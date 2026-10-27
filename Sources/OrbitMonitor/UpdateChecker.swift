@@ -110,7 +110,8 @@ final class UpdateChecker: ObservableObject {
 
     /// 清单可用时才判断系统版本、架构与新版本；不可用就如实说缺什么。
     private func verdict(for release: UpdateRelease) -> UpdateState {
-        // 先比版本：已是最新时，清单要求的最低系统版本与本次检查无关。
+        // 先比版本：已是最新时无需验签——没有要安装的东西，验签只会让
+        // 「清单签名出问题」误报成「检查更新失败」，反而干扰用户。
         guard UpdateFeed.isNewer(release, thanBuild: currentBuild, currentVersion: currentVersion) else {
             return .upToDate
         }
@@ -121,7 +122,32 @@ final class UpdateChecker: ObservableObject {
         guard let download = UpdateFeed.download(for: release, architecture: architecture) else {
             return .failed(Strings.current(.noDownloadForArch, architecture))
         }
+
+        // 有可安装的新版本时，签名是硬门禁：
+        // 清单被劫持的场景下，SHA-256 与清单同源、已经失效，只有这个公钥还在守门。
+        if let failure = UpdateSignature.verify(
+            release: release,
+            signatureBase64: release.signature ?? "",
+            publicKeyBase64: UpdateSigningKey.publicKeyBase64
+        ) {
+            return .failed(Self.message(for: failure))
+        }
+
+        // 自更新需要能校验安装包；清单里没有 sha256 就无从校验，宁可拒绝。
+        guard let sha = download.sha256, !sha.isEmpty else {
+            return .failed(Strings.current(.updateChecksumMissing))
+        }
         return .available(release, download)
+    }
+
+    /// 把验签失败原因翻译成可执行的提示。
+    private static func message(for failure: UpdateSignature.Failure) -> String {
+        switch failure {
+        case .missing: Strings.current(.updateSignatureMissing)
+        case .malformed: Strings.current(.updateSignatureMalformed)
+        case .invalidPublicKey: Strings.current(.updateSigningKeyInvalid)
+        case .invalid: Strings.current(.updateSignatureInvalid)
+        }
     }
 
     private var systemVersion: String {

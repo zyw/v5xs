@@ -9,7 +9,11 @@ import ServiceManagement
 /// `rawValue` 是**持久化标识**，必须保持不变（用户已保存的选择依赖它）；
 /// 界面上显示的名称一律走 `displayName`，跟随界面语言。
 enum Animal: String, CaseIterable, Identifiable {
-    case cat, rabbit, fox, dog, horse, dinosaur, frog, chicken, duck, fish
+    // 只保留 Resources/Animals 里确有雪碧图的形象。
+    // 之前有 fox 但没有对应图片，运行时只能退化为代码手绘，
+    // 与其他动物风格不一致，已移除。
+    case cat, rabbit, dog, horse, dinosaur, frog, chicken, duck, fish
+    case tabbing, bolt, dragon, panda, tiger
 
     var id: String { rawValue }
 
@@ -18,7 +22,11 @@ enum Animal: String, CaseIterable, Identifiable {
         switch self {
         case .cat: return Strings.current(.animalCat)
         case .rabbit: return Strings.current(.animalRabbit)
-        case .fox: return Strings.current(.animalFox)
+        case .tabbing: return Strings.current(.animalTabbing)
+        case .bolt: return Strings.current(.animalBolt)
+        case .dragon: return Strings.current(.animalDragon)
+        case .panda: return Strings.current(.animalPanda)
+        case .tiger: return Strings.current(.animalTiger)
         case .dog: return Strings.current(.animalDog)
         case .horse: return Strings.current(.animalHorse)
         case .dinosaur: return Strings.current(.animalDinosaur)
@@ -70,6 +78,19 @@ final class MonitorStore: ObservableObject {
     /// 已安装应用列表缓存时长（天）。改后立即写入，卸载窗口下次读取新值。
     @Published var appCacheDays: Double {
         didSet { AppListCacheSetting.set(appCacheDays) }
+    }
+    /// 是否每 24 小时自动检查更新。
+    @Published var autoCheckUpdates: Bool {
+        didSet { UserDefaults.standard.set(autoCheckUpdates, forKey: "autoCheckUpdates") }
+    }
+    /// 发现新版本后是否自动下载（不自动安装）。
+    @Published var autoDownloadUpdates: Bool {
+        didSet { UserDefaults.standard.set(autoDownloadUpdates, forKey: "autoDownloadUpdates") }
+    }
+    /// 下载校验完成后是否自动重启安装。
+    /// 默认关闭：这会让应用自行退出并重启，属于侵入性操作，应由用户显式开启。
+    @Published var autoInstallUpdates: Bool {
+        didSet { UserDefaults.standard.set(autoInstallUpdates, forKey: "autoInstallUpdates") }
     }
     /// 摄像头 / 麦克风占用状态（用于面板里的「隐私」条）。
     @Published var micInUse = false
@@ -140,6 +161,12 @@ final class MonitorStore: ObservableObject {
         }
         refreshRate = initialRate
         appCacheDays = AppListCacheSetting.days
+        // 默认值：自动检查开、自动下载关、自动安装关。
+        // 用 object(forKey:) 而不是 bool(forKey:)，以便区分「未设置」与「设为 false」。
+        let hasAutoCheck = defaults.object(forKey: "autoCheckUpdates") != nil
+        autoCheckUpdates = hasAutoCheck ? defaults.bool(forKey: "autoCheckUpdates") : true
+        autoDownloadUpdates = defaults.bool(forKey: "autoDownloadUpdates")
+        autoInstallUpdates = defaults.bool(forKey: "autoInstallUpdates")
     }
 
     func start() {

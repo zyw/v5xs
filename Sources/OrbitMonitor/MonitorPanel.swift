@@ -590,7 +590,10 @@ struct SettingsPanel: View {
     @ObservedObject var store: MonitorStore
     @ObservedObject var updates: UpdateChecker
     @ObservedObject var localization: Localization
-    @State private var selection: SettingsSection = .general
+    @ObservedObject var flow: UpdateFlow
+    /// 当前选中的分区。由外部持有（而不是 @State），
+    /// 这样「检查更新」可以从菜单直接跳到「更新」页，而不是只把窗口打开。
+    @Binding var selection: SettingsSection
 
     private var cacheDays: Int { Int(store.appCacheDays.rounded()) }
 
@@ -678,7 +681,7 @@ struct SettingsPanel: View {
 
     private var updatePage: some View {
         Form {
-            UpdateSection(updates: updates)
+            UpdateSection(updates: updates, flow: flow, store: store)
         }
         .formStyle(.grouped)
     }

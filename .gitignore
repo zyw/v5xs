@@ -3,3 +3,6 @@
 .build-probe/
 dist/
 .DS_Store
+
+# 更新签名私钥，禁止入库
+scripts/update-keys/

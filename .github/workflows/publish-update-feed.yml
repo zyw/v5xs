@@ -123,6 +123,32 @@ jobs:
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.dmg' --dir dist
           ls -l dist
 
+      - name: Write signing key
+        # 自动更新要求清单带 Ed25519 签名，否则客户端拒绝安装。
+        # 私钥只来自 Repository secret，绝不写入仓库。
+        env:
+          SIGNING_KEY: ${{ secrets.V5XS_UPDATE_SIGNING_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SIGNING_KEY:-}" ]; then
+            echo "错误: 未配置 secret V5XS_UPDATE_SIGNING_KEY。" >&2
+            echo "自动更新需要签名清单，缺少私钥会使发布出的版本无法被客户端自动安装。" >&2
+            echo "配置方法见 docs/update-signing.md。" >&2
+            echo "如果本次只想发布一个不能用自动更新的版本，请在仓库设置里临时禁用本工作流。" >&2
+            exit 1
+          fi
+          mkdir -p scripts/update-keys
+          printf 'PRIVATE_KEY_BASE64=%s\n' "$SIGNING_KEY" > scripts/update-keys/ed25519.key
+          chmod 600 scripts/update-keys/ed25519.key
+          echo "已写入签名私钥（长度 ${#SIGNING_KEY}）"
+
+      - name: Build signing tool
+        run: |
+          set -euo pipefail
+          # 签名工具复用客户端的规范化逻辑，必须由同一份源码编译出来，
+          # 否则「发出去的清单客户端验不过」。
+          bash scripts/dev-build-tools.sh
+
       - name: Generate update.json
         env:
           GH_TOKEN: ${{ github.token }}
@@ -162,6 +188,43 @@ jobs:
 
           echo '--- dist/update.json ---'
           cat dist/update.json
+
+          # 硬门禁：没有签名的清单客户端会拒绝自动安装。
+          # 这里提前失败，而不是等用户更新时才发现。
+          if ! plutil -p dist/update.json | grep -q '"signature"'; then
+            echo "错误: 生成的清单没有 signature 字段，自动更新将不可用。" >&2
+            exit 1
+          fi
+          echo "签名已写入清单。"
+
+      - name: Verify signature with client public key
+        # 签名工具在写入前已自检过一次；这里再用**仓库里的公钥**验证一遍，
+        # 确认 CI 用的私钥与编译进 App 的公钥确实配对。
+        # 两者不配对时，所有已安装客户端都会拒绝这次更新。
+        run: |
+          set -euo pipefail
+          sdk="/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk"
+          [ -d "$sdk" ] || sdk="$(xcrun --sdk macosx --show-sdk-path)"
+          cat > /tmp/verify-signature.swift <<'SWIFT'
+          import Foundation
+          import MonitorCore
+
+          let data = FileManager.default.contents(atPath: "dist/update.json")!
+          let release = try UpdateFeed.release(from: data)
+          if let failure = UpdateSignature.verify(
+              release: release,
+              signatureBase64: release.signature ?? "",
+              publicKeyBase64: UpdateSigningKey.publicKeyBase64
+          ) {
+              FileHandle.standardError.write(Data("签名校验失败: \(failure)\n".utf8))
+              exit(1)
+          }
+          print("签名校验通过：v\(release.version) build \(release.build)")
+          SWIFT
+          swiftc -swift-version 6 -sdk "$sdk" -module-cache-path .build-local/modules \
+            -I .build-local -L .build-local -lMonitorCore \
+            /tmp/verify-signature.swift -o /tmp/verify-signature
+          DYLD_LIBRARY_PATH=.build-local /tmp/verify-signature
 
       - name: Upload update.json to release
         env:
@@ -205,3 +268,8 @@ jobs:
             echo "注意：${TAG} 不是当前最新 Release（最新为 ${latest}），"
             echo "$feed 仍指向 $latest 的清单，属预期行为。"
           fi
+
+      - name: Remove signing key
+        # 即便 runner 是一次性的，也不把私钥留在磁盘上。
+        if: always()
+        run: rm -f scripts/update-keys/ed25519.key

@@ -16,7 +16,8 @@ public enum StringKey: String, CaseIterable, Sendable {
     case monitoring, refreshRate, refreshRateHint, refreshRateFooter
     case rateFastestTitle, rateStandardTitle, rateRelaxedTitle, ratePowerSaverTitle
     case rateUpdateEvery, rateDetail
-    case animalCat, animalRabbit, animalFox, animalDog, animalHorse
+    case animalCat, animalRabbit, animalDog, animalHorse
+    case animalTabbing, animalBolt, animalDragon, animalPanda, animalTiger
     case animalDinosaur, animalFrog, animalChicken, animalDuck, animalFish
     case netOffline, netWifi, netEthernet, netCellular, netOther
     case softwareUninstall, softwareUninstallArrow, uninstallHint, openUninstallerHint, coresLabel, coresPerfEff, gpuActivity, gpuCoresUnknown, gpuActivityHistory, gpuNotAvailable, totalLabel, freeSpace, diskUsedA11y, readWrite, timeAxis, usageAxis, downloadAxis, uploadAxis, downloadRateA11y, waitingNetwork, networkCurveA11y, uploadRate, refreshRateA11y, cpuTempA11y, cpuTempRatioA11y, camInUse, camIdle, micInUse, micIdle, localAndPeripherals, batteryPercentA11y, chipUnknown, appCacheDaysValue
@@ -42,6 +43,8 @@ public enum StringKey: String, CaseIterable, Sendable {
     case language, languageHint, languageRestartHint
     case aboutVersion, aboutSystem, aboutCpu, aboutUptime
     case uptimeDaysHours, uptimeDuration, uptimeLabel, previewTitle
+    case updateDownloadAndInstall, updateDownloading, updateVerifying, updatePreparing, updateRestarting, updateCancel, updateFailureCancelled, updateFailureDownload, updateFailureChecksum, updateFailureManualInstall, updateFailureNoSpace, updateFailureMultipleInstances, updateFailureInstall, updateInstallHint, updateSettingsAutoCheck, updateSettingsAutoDownload, updateSettingsAutoInstall, updateSettingsAutoInstallHint, updateInstallNow, updateReadyBanner, updateManualFallback
+    case updateSignatureMissing, updateSignatureMalformed, updateSignatureInvalid, updateSigningKeyInvalid, updateChecksumMissing
     case startupLoginItemGeneric, startupLoginItemAuto, startupCannotToggle, startupThirdPartyHint, startupKindLoginItem, startupKindUserAgent, startupKindSystemAgent, startupKindDaemon, startupTotal, startupEnabledAtBoot, startupNeedsPermission, startupSystemAgentDaemon, rescanStartupItems, searchStartupPlaceholder, noMatchingStartupItems, itemsCount, clickToToggle, startupFooterNote, startupToggleWarning, batteryOnBattery, browserName, webPage, otherProcess
     case uninstallAppBody, uninstallAppSupport, uninstallCaches, uninstallContainers, uninstallSavedState, uninstallPreferences, uninstallLoginItem, uninstallAppScripts, uninstallLogs, uninstallRecentDocs, uninstallTempCache, uninstallAppSupportByName, uninstallCacheByName, colName, colSize, colLastUsed, colInstalled, confirmMoveAppsTitle, confirmMoveAppsMessage, moveToTrash, cancelQuitAppFirst, ownershipUnconfirmed, startupItemsTab, uninstallWindowSubtitle, startupWindowSubtitle, willFree, nothingSelected, selectedAppsSummary, searchAppsPlaceholder, clearSearch, rescanHint, installedSummary, relatedFilesCount, noAppsFound, lastUsedUnknown, activeNow, selectApp, deselectApp, selectedEstimate, expandFiles, collapseFiles, filesToProcess, reviewEachFile, onlyExactMatch, copyPath, noAppSelectedHint, appsCount, estimatedFree, moveToTrashWithCount, someFilesFailed, scanInProgress
     case checkUpdatesEllipsis, newVersionMenu, requiresMacOS, noDownloadForArch, feedMalformed, feedMissingVersion, feedMissingDownloads, updateNotHTTP, updateBadStatus, updateCannotConnect
@@ -199,7 +202,11 @@ public enum Strings {
         .rateDetail: "每 %@ 秒采样；数值越小曲线越细腻、开销越高。",
         .animalCat: "猫",
         .animalRabbit: "兔",
-        .animalFox: "狐",
+        .animalTabbing: "短跑手",
+        .animalBolt: "闪电",
+        .animalDragon: "龙",
+        .animalPanda: "熊猫",
+        .animalTiger: "老虎",
         .animalDog: "狗",
         .animalHorse: "马",
         .animalDinosaur: "恐龙",
@@ -343,6 +350,32 @@ public enum Strings {
         .browserName: "浏览器",
         .webPage: "网页",
         .otherProcess: "其他进程",
+        .updateSignatureMissing: "更新清单缺少签名，已拒绝安装。",
+        .updateSignatureMalformed: "更新清单的签名格式不正确，已拒绝安装。",
+        .updateSignatureInvalid: "更新清单签名校验失败，可能被篡改，已拒绝安装。",
+        .updateSigningKeyInvalid: "内置的更新签名公钥无效，请重新安装 v5xs。",
+        .updateChecksumMissing: "更新清单缺少安装包校验值，已拒绝安装。",
+        .updateDownloadAndInstall: "下载并安装",
+        .updateDownloading: "正在下载 %@…",
+        .updateVerifying: "正在校验安装包…",
+        .updatePreparing: "正在准备安装…",
+        .updateRestarting: "即将重启以完成更新…",
+        .updateCancel: "取消",
+        .updateFailureCancelled: "已取消更新。",
+        .updateFailureDownload: "下载失败，请检查网络后重试。",
+        .updateFailureChecksum: "安装包校验失败，可能已损坏，请重试。",
+        .updateFailureManualInstall: "无法自动安装：v5xs 所在位置不可写（%@）。请把 v5xs 拖入「应用程序」文件夹后重试，或手动下载安装。",
+        .updateFailureNoSpace: "磁盘空间不足：需要约 %@，当前可用 %@。",
+        .updateFailureMultipleInstances: "检测到多个 v5xs 正在运行，请先退出其他实例再更新。",
+        .updateFailureInstall: "安装准备失败：%@",
+        .updateInstallHint: "下载完成后会自动校验并重启安装。",
+        .updateSettingsAutoCheck: "自动检查更新（每 24 小时）",
+        .updateSettingsAutoDownload: "发现新版本后自动下载",
+        .updateSettingsAutoInstall: "下载完成后自动重启安装",
+        .updateSettingsAutoInstallHint: "关闭后，下载完成的更新会在你点「立即安装」时才应用。",
+        .updateInstallNow: "立即安装并重启",
+        .updateReadyBanner: "更新已就绪，重启后生效。",
+        .updateManualFallback: "手动下载",
     ]
 
     static let hant: [StringKey: String] = [
@@ -470,7 +503,11 @@ public enum Strings {
         .rateDetail: "每 %@ 秒取樣；數值越小曲線越細緻、開銷越高。",
         .animalCat: "貓",
         .animalRabbit: "兔",
-        .animalFox: "狐",
+        .animalTabbing: "短跑手",
+        .animalBolt: "閃電",
+        .animalDragon: "龍",
+        .animalPanda: "貓熊",
+        .animalTiger: "老虎",
         .animalDog: "狗",
         .animalHorse: "馬",
         .animalDinosaur: "恐龍",
@@ -614,6 +651,32 @@ public enum Strings {
         .browserName: "瀏覽器",
         .webPage: "網頁",
         .otherProcess: "其他程式",
+        .updateSignatureMissing: "更新清單缺少簽章，已拒絕安裝。",
+        .updateSignatureMalformed: "更新清單的簽章格式不正確，已拒絕安裝。",
+        .updateSignatureInvalid: "更新清單簽章驗證失敗，可能遭竄改，已拒絕安裝。",
+        .updateSigningKeyInvalid: "內建的更新簽章公鑰無效，請重新安裝 v5xs。",
+        .updateChecksumMissing: "更新清單缺少安裝檔校驗值，已拒絕安裝。",
+        .updateDownloadAndInstall: "下載並安裝",
+        .updateDownloading: "正在下載 %@…",
+        .updateVerifying: "正在驗證安裝檔…",
+        .updatePreparing: "正在準備安裝…",
+        .updateRestarting: "即將重新啟動以完成更新…",
+        .updateCancel: "取消",
+        .updateFailureCancelled: "已取消更新。",
+        .updateFailureDownload: "下載失敗，請檢查網路後再試。",
+        .updateFailureChecksum: "安裝檔驗證失敗，可能已損毀，請再試一次。",
+        .updateFailureManualInstall: "無法自動安裝：v5xs 所在位置無法寫入（%@）。請將 v5xs 拖入「應用程式」資料夾後再試，或手動下載安裝。",
+        .updateFailureNoSpace: "磁碟空間不足：需要約 %@，目前可用 %@。",
+        .updateFailureMultipleInstances: "偵測到多個 v5xs 正在執行，請先結束其他實例再更新。",
+        .updateFailureInstall: "安裝準備失敗：%@",
+        .updateInstallHint: "下載完成後會自動驗證並重新啟動安裝。",
+        .updateSettingsAutoCheck: "自動檢查更新（每 24 小時）",
+        .updateSettingsAutoDownload: "發現新版本後自動下載",
+        .updateSettingsAutoInstall: "下載完成後自動重新啟動安裝",
+        .updateSettingsAutoInstallHint: "關閉後，已下載完成的更新會等你點「立即安裝」時才套用。",
+        .updateInstallNow: "立即安裝並重新啟動",
+        .updateReadyBanner: "更新已就緒，重新啟動後生效。",
+        .updateManualFallback: "手動下載",
     ]
 
     static let en: [StringKey: String] = [
@@ -741,7 +804,11 @@ public enum Strings {
         .rateDetail: "Samples every %@ s — smaller means smoother charts and higher cost.",
         .animalCat: "Cat",
         .animalRabbit: "Rabbit",
-        .animalFox: "Fox",
+        .animalTabbing: "Sprinter",
+        .animalBolt: "Bolt",
+        .animalDragon: "Dragon",
+        .animalPanda: "Panda",
+        .animalTiger: "Tiger",
         .animalDog: "Dog",
         .animalHorse: "Horse",
         .animalDinosaur: "Dinosaur",
@@ -885,5 +952,25 @@ public enum Strings {
         .browserName: "Browser",
         .webPage: "Web page",
         .otherProcess: "Another process",
+        .updateSignatureMissing: "The update manifest is not signed; installation refused.",
+        .updateSignatureMalformed: "The update manifest signature is malformed; installation refused.",
+        .updateSignatureInvalid: "Update manifest signature verification failed — it may have been tampered with. Installation refused.",
+        .updateSigningKeyInvalid: "The built-in update signing key is invalid. Please reinstall v5xs.",
+        .updateChecksumMissing: "The update manifest has no package checksum; installation refused.",
+        .updateDownloadAndInstall: "Download and Install",
+        .updateDownloading: "Downloading %@…",
+        .updateVerifying: "Verifying the package…",
+        .updatePreparing: "Preparing the installation…",
+        .updateRestarting: "Restarting to finish the update…",
+        .updateCancel: "Cancel",
+        .updateFailureCancelled: "Update cancelled.",
+        .updateFailureDownload: "Download failed. Check your connection and try again.",
+        .updateFailureChecksum: "The package failed verification and may be corrupted. Please try again.",
+        .updateFailureManualInstall: "Cannot install automatically: the location (%@) is not writable. Move v5xs into Applications and retry, or install manually.",
+        .updateFailureNoSpace: "Not enough disk space: about %@ needed, %@ available.",
+        .updateFailureMultipleInstances: "Multiple v5xs instances are running. Quit the others before updating.",
+        .updateFailureInstall: "Could not prepare the installation: %@",
+        .updateInstallHint: "After downloading, v5xs verifies the package and restarts to install.",
+        .updateSettingsAutoCheck: "Check for updates automatically (every 24 hours)",
     ]
 }

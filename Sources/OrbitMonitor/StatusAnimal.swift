@@ -2,11 +2,46 @@ import AppKit
 
 @MainActor
 enum StatusAnimal {
+    /// 一张横向拼接的雪碧图。
+    ///
+    /// 两种排布都要支持：
+    /// * 等宽帧（老资源）：只给 `frameWidth` + `count`；
+    /// * 不等宽帧（新资源）：给 `frameOffsets`，每帧边界按实测空白处切，
+    ///   因为画师导出的帧间距不同，强制等分会把动物切掉。代价是帧宽不齐，
+    ///   所以这里以「每帧自身宽度」为单位做居中缩放，而不是按统一帧宽。
     private struct Sheet {
         let name: String
-        let frameWidth: Int
         let frameHeight: Int
         let count: Int
+        /// 等宽帧用。不等宽时为 0。
+        let frameWidth: Int
+        /// 不等宽帧的起始 x 坐标（升序，数量 = count + 1 表示右边界）。
+        let frameOffsets: [Int]
+
+        init(name: String, frameWidth: Int, frameHeight: Int, count: Int) {
+            self.name = name
+            self.frameWidth = frameWidth
+            self.frameHeight = frameHeight
+            self.count = count
+            self.frameOffsets = []
+        }
+
+        init(name: String, frameHeight: Int, frameOffsets: [Int]) {
+            self.name = name
+            self.frameWidth = 0
+            self.frameHeight = frameHeight
+            self.count = max(frameOffsets.count - 1, 0)
+            self.frameOffsets = frameOffsets
+        }
+
+        /// 第 `index` 帧在原图里的 x 起点与宽度。
+        func frameRect(_ index: Int) -> (x: Int, width: Int) {
+            if frameOffsets.isEmpty {
+                return (index * frameWidth, frameWidth)
+            }
+            let start = frameOffsets[index]
+            return (start, frameOffsets[index + 1] - start)
+        }
     }
 
     private struct Pose {
@@ -34,6 +69,31 @@ enum StatusAnimal {
         return images[frame % images.count]
     }
 
+    /// 暂停动画时显示的静态图标（应用 Logo 剪影，与动物形象无关）。
+    ///
+    /// 暂停后仍显示当前动物的某一帧会让人误以为「动画坏了」；
+    /// 换成 Logo 能明确表达「已暂停」这个状态。
+    /// 加载失败时回落到当前动物的静止帧，保证菜单栏不会出现空白图标。
+    static func paused(animal: Animal) -> NSImage {
+        if let image = pausedIcon() { return image }
+        return image(animal: animal, frame: 0)
+    }
+
+    private static let pausedIconCache: NSImage? = {
+        let path = Bundle.main.path(forResource: "PausedIcon", ofType: "png")
+            ?? "Resources/PausedIcon.png"
+        guard let image = NSImage(contentsOfFile: path) else { return nil }
+        // 菜单栏图标按 size 实际显示，这里给 22pt 的逻辑尺寸。
+        image.size = NSSize(width: 22, height: 19)
+        // template 让系统按菜单栏明暗自动着色（浅色栏显示黑、深色栏显示白）。
+        image.isTemplate = true
+        return image
+    }()
+
+    private static func pausedIcon() -> NSImage? { pausedIconCache }
+
+    /// 雪碧图清单。帧边界由 scripts/slice-animal-sheet.py 实测空白列得出，
+    /// 不要凭视觉估算——估错会把动物的腿或尾巴切掉。
     private static func sheet(for animal: Animal) -> Sheet? {
         switch animal {
         case .cat: Sheet(name: "cat", frameWidth: 126, frameHeight: 77, count: 5)
@@ -45,7 +105,22 @@ enum StatusAnimal {
         case .chicken: Sheet(name: "chicken", frameWidth: 37, frameHeight: 36, count: 5)
         case .duck: Sheet(name: "duck", frameWidth: 41, frameHeight: 36, count: 6)
         case .fish: Sheet(name: "fish", frameWidth: 61, frameHeight: 36, count: 5)
-        case .fox: nil
+        // 以下五张为不等宽帧（帧间距不匀），边界取自实测空白列。
+        case .tabbing:
+            Sheet(name: "tabbing", frameHeight: 77,
+                  frameOffsets: [0, 115, 266, 412, 557, 683])
+        case .bolt:
+            Sheet(name: "bolt", frameHeight: 77,
+                  frameOffsets: [0, 104, 234, 375, 499, 601])
+        case .dragon:
+            Sheet(name: "dragon", frameHeight: 77,
+                  frameOffsets: [0, 146, 317, 490, 641, 790])
+        case .panda:
+            Sheet(name: "panda", frameHeight: 77,
+                  frameOffsets: [0, 140, 308, 478, 634, 767])
+        case .tiger:
+            Sheet(name: "tiger", frameHeight: 77,
+                  frameOffsets: [0, 149, 320, 486, 642, 792])
         }
     }
 
@@ -60,15 +135,18 @@ enum StatusAnimal {
     }
 
     private static func sprite(source: NSImage, sheet: Sheet, index: Int) -> NSImage {
+        let (sourceX, sourceWidth) = sheet.frameRect(index)
         let image = NSImage(size: NSSize(width: 34, height: 22), flipped: false) { _ in
             NSGraphicsContext.current?.imageInterpolation = .high
-            let scale = min(32 / CGFloat(sheet.frameWidth), 20 / CGFloat(sheet.frameHeight))
-            let width = CGFloat(sheet.frameWidth) * scale
+            // 每帧按**自身宽度**缩放后居中，而不是按统一帧宽：
+            // 不等宽雪碧图里较窄的帧（如起跳姿势）若按最大帧宽算会显得偏小。
+            let scale = min(32 / CGFloat(sourceWidth), 20 / CGFloat(sheet.frameHeight))
+            let width = CGFloat(sourceWidth) * scale
             let height = CGFloat(sheet.frameHeight) * scale
             source.draw(
                 in: NSRect(x: (34 - width) / 2, y: (22 - height) / 2, width: width, height: height),
-                from: NSRect(x: index * sheet.frameWidth, y: 0,
-                             width: sheet.frameWidth, height: sheet.frameHeight),
+                from: NSRect(x: sourceX, y: 0,
+                             width: sourceWidth, height: sheet.frameHeight),
                 operation: .sourceOver, fraction: 1
             )
             return true
@@ -140,15 +218,6 @@ enum StatusAnimal {
             path.stroke()
         case .rabbit:
             NSBezierPath(ovalIn: NSRect(x: 25, y: 12 + sway * 0.4, width: 4, height: 4)).fill()
-        case .fox:
-            let path = NSBezierPath()
-            path.move(to: NSPoint(x: 24, y: 12))
-            path.curve(to: NSPoint(x: 32, y: 18 + sway),
-                       controlPoint1: NSPoint(x: 29, y: 15), controlPoint2: NSPoint(x: 30, y: 18 + sway))
-            path.curve(to: NSPoint(x: 29, y: 11 + sway),
-                       controlPoint1: NSPoint(x: 33, y: 15 + sway), controlPoint2: NSPoint(x: 32, y: 12 + sway))
-            path.close()
-            path.fill()
         default:
             break
         }
@@ -184,13 +253,6 @@ enum StatusAnimal {
             ears.curve(to: NSPoint(x: 13, y: 21),
                        controlPoint1: NSPoint(x: 11, y: 22), controlPoint2: NSPoint(x: 13, y: 22))
             ears.line(to: NSPoint(x: 13, y: 15))
-        case .fox:
-            ears.move(to: NSPoint(x: 7, y: 15))
-            ears.line(to: NSPoint(x: 5, y: 20))
-            ears.line(to: NSPoint(x: 11, y: 16))
-            ears.move(to: NSPoint(x: 11, y: 16))
-            ears.line(to: NSPoint(x: 13, y: 19))
-            ears.line(to: NSPoint(x: 14, y: 14))
         default:
             break
         }
@@ -198,7 +260,7 @@ enum StatusAnimal {
 
         let muzzle = NSBezierPath()
         muzzle.move(to: NSPoint(x: 6, y: 13))
-        muzzle.line(to: NSPoint(x: animal == .fox ? 2.5 : 4, y: 11.5))
+        muzzle.line(to: NSPoint(x: 4, y: 11.5))
         muzzle.line(to: NSPoint(x: 7, y: 10.5))
         muzzle.close()
         muzzle.fill()

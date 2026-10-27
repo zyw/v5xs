@@ -23,6 +23,8 @@ public struct UpdateRelease: Sendable, Equatable {
     public let publishedAt: Date?
     public let notes: String?
     public let downloads: [UpdateDownload]
+    /// 清单的 Ed25519 签名（base64）。旧清单可能没有，留空表示未签名。
+    public let signature: String?
 
     public init(
         version: String,
@@ -30,7 +32,8 @@ public struct UpdateRelease: Sendable, Equatable {
         minimumSystemVersion: String? = nil,
         publishedAt: Date? = nil,
         notes: String? = nil,
-        downloads: [UpdateDownload]
+        downloads: [UpdateDownload],
+        signature: String? = nil
     ) {
         self.version = version
         self.build = build
@@ -38,6 +41,7 @@ public struct UpdateRelease: Sendable, Equatable {
         self.publishedAt = publishedAt
         self.notes = notes
         self.downloads = downloads
+        self.signature = signature
     }
 }
 
@@ -93,7 +97,8 @@ public enum UpdateFeed {
             },
             publishedAt: publishedAt(from: payload.publishedAt),
             notes: payload.notes,
-            downloads: downloads
+            downloads: downloads,
+            signature: payload.signature?.trimmingCharacters(in: .whitespacesAndNewlines)
         )
     }
 
@@ -160,6 +165,7 @@ private struct FeedPayload: Decodable {
     let publishedAt: String?
     let notes: String?
     let downloads: [DownloadPayload]?
+    let signature: String?
 }
 
 private struct DownloadPayload: Decodable {

@@ -36,6 +36,7 @@ cp "$build_dir/libMonitorCore.dylib" "$app_dir/Contents/Frameworks/libMonitorCor
 cp "$project_dir/Resources/Info.plist" "$app_dir/Contents/Info.plist"
 cp "$project_dir/Resources/AppIcon.icns" "$app_dir/Contents/Resources/AppIcon.icns"
 cp "$project_dir"/Resources/Animals/*.png "$app_dir/Contents/Resources/Animals/"
+cp "$project_dir/Resources/PausedIcon.png" "$app_dir/Contents/Resources/PausedIcon.png"
 install_name_tool -change "$build_dir/libMonitorCore.dylib" \
   "@executable_path/../Frameworks/libMonitorCore.dylib" "$app_dir/Contents/MacOS/v5xs"
 install_name_tool -change ".build-local/libMonitorCore.dylib" \

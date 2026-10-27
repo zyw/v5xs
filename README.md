@@ -81,16 +81,20 @@ bash scripts/build-dmg.sh
 - 启动项：登录项、LaunchAgent / LaunchDaemon 按来源分组展示。用户级代理可直接开关；系统级代理与守护进程需管理员权限；第三方登录项建议在“系统设置 → 通用 → 登录项”中管理。
 - 进程终止依赖应用权限，仅对当前仍可确认身份的 GUI 应用执行；**沙盒分发不能使用这些跨应用终止操作**。
 
-## 🔄 检查更新
+## 🔄 自动更新
 
-v5xs 采用「清单 + 跳转下载」的轻量更新方式，不做静默替换安装：
+v5xs 可以自己下载新版、校验、替换并重启，也可以只提醒、由你决定何时安装。
+**用户侧说明见 [docs/auto-update-guide.md](docs/auto-update-guide.md)。**
 
 1. 启动后若距上次检查超过 24 小时，会在后台静默检查一次；也可在右键菜单或设置页手动触发。
 2. 客户端用 `URLSession` 拉取 `Info.plist` 中 `V5XSUpdateFeedURL` 指向的 `update.json`——即每个正式版作为 **GitHub Releases 附件**发布的固定名清单（`releases/latest/download/update.json` 始终指向最新版；可用环境变量 `V5XS_UPDATE_FEED` 覆盖，便于本地联调）。
-3. 清单包含版本号、构建号、最低系统版本、发行说明与各架构安装包的 URL / 大小 / SHA-256。
-4. 比对 `CFBundleVersion`（相等时再比语义版本号）；有新版且当前系统满足最低版本要求时，展示版本号、发行说明与「下载 DMG」按钮，点击用 `NSWorkspace` 打开下载链接。
+3. 清单包含版本号、构建号、最低系统版本、发行说明、各架构安装包的 URL / 大小 / SHA-256，以及 **Ed25519 签名**。
+4. 比对 `CFBundleVersion`（相等时再比语义版本号）；有新版时先验签，通过才允许安装。
+5. 点「下载并安装」后：下载 → SHA-256 校验 → 挂载 DMG → 校验 BundleID → 复制到同卷暂存区 → 退出 App → 独立脚本原子替换（失败自动回滚）→ 重新启动。
 
-发布侧用 `scripts/make-update-manifest.sh`（默认按发布 tag 生成不可变的 DMG 下载地址）生成清单，可配合 [.github/workflows/publish-update-feed.yml](.github/workflows/publish-update-feed.yml) 把 `update.json` 自动上传为 Release 附件，流程见 [docs/update-publish.md](docs/update-publish.md)；各方案对比与选型理由见 [docs/update-research.md](docs/update-research.md)。
+更新页有三个递进开关：自动检查（默认开）、自动下载（默认关）、自动重启安装（默认关）。
+
+发布侧用 `scripts/make-update-manifest.sh`（默认按发布 tag 生成不可变的 DMG 下载地址，并自动签名）生成清单，可配合 [.github/workflows/publish-update-feed.yml](.github/workflows/publish-update-feed.yml) 把 `update.json` 自动上传为 Release 附件。发版前需在仓库配置签名 secret，见 [docs/update-signing.md](docs/update-signing.md)；发布流程见 [docs/update-publish.md](docs/update-publish.md)；各方案对比与选型理由见 [docs/update-research.md](docs/update-research.md)。
 
 <p align="center">
   <img src="docs/update-section.png" width="420" alt="设置页的更新分区" />

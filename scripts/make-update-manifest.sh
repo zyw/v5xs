@@ -49,6 +49,8 @@ architecture_override=""
 published_at_override=""
 min_system_override=""
 dmg_args=""   # 换行分隔的 --dmg 参数列表（bash 3.2 无关联数组）
+sign_enabled=1
+sign_key_path="${V5XS_UPDATE_SIGNING_KEY:-$PROJECT_DIR/scripts/update-keys/ed25519.key}"
 
 usage() {
   cat <<'EOF'
@@ -70,7 +72,16 @@ usage() {
   --minimum-system <ver>  覆盖 minimumSystemVersion（默认取自 LSMinimumSystemVersion）
   --architecture <arch>   覆盖 architecture（arm64 / x86_64 / universal）
   --published-at <time>   覆盖发布时间，RFC3339 UTC（默认当前时间）
+  --sign-key <path>       签名私钥路径（默认 scripts/update-keys/ed25519.key，
+                          也可用环境变量 V5XS_UPDATE_SIGNING_KEY 指定）
+  --no-sign               不签名（仅用于本地调试；客户端会拒绝用它自动安装）
   -h, --help              显示本帮助并退出
+
+签名:
+  自动更新要求清单带 Ed25519 签名，客户端用内嵌公钥验签后才允许安装。
+  私钥不存在时只警告、不失败，但产出的清单不会被客户端接受用于自动更新。
+  签名工具需先用 scripts/dev-build-tools.sh 构建。
+  详见 docs/update-signing.md。
 
 清单格式:
   {
@@ -192,6 +203,13 @@ $2"; else dmg_args="$2"; fi
     --published-at)
       [[ $# -ge 2 ]] || usage_error "--published-at 需要一个参数"
       published_at_override="$2"; shift 2
+      ;;
+    --sign-key)
+      [[ $# -ge 2 ]] || usage_error "--sign-key 需要一个参数"
+      sign_key_path="$2"; shift 2
+      ;;
+    --no-sign)
+      sign_enabled=0; shift
       ;;
     -h|--help)
       usage; exit 0
@@ -397,3 +415,26 @@ printf 'Wrote %s\n' "$out_path"
 printf '  version: %s (build %s)\n' "$version" "$build"
 printf '  downloads: %s\n' "$count"
 printf '  feed:  https://github.com/%s/releases/latest/download/update.json\n' "$DEFAULT_REPO"
+
+# ---------------------------------------------------------------- 自动签名
+# 自动更新要求清单带 Ed25519 签名，否则客户端会拒绝安装（见 UpdateSignature.swift）。
+# 私钥默认读 scripts/update-keys/ed25519.key（已被 .gitignore 排除），
+# 可用 --sign-key / V5XS_UPDATE_SIGNING_KEY 覆盖；显式传 --no-sign 可跳过。
+if [[ "$sign_enabled" == "1" ]]; then
+  if [[ -f "$sign_key_path" ]]; then
+    sign_tool="$PROJECT_DIR/.build-local/sign-manifest"
+    if [[ ! -x "$sign_tool" ]]; then
+      printf '%s: 错误: 签名工具不存在，请先运行 scripts/dev-build-tools.sh\n' "$PROG_NAME" >&2
+      exit 1
+    fi
+    if DYLD_LIBRARY_PATH="$PROJECT_DIR/.build-local" "$sign_tool" "$out_path" "$sign_key_path" >/dev/null; then
+      printf '  signed: yes\n'
+    else
+      die "清单签名失败（详见上方输出）"
+    fi
+  else
+    printf '%s: 警告: 未找到私钥 %s，清单将不带签名，客户端会拒绝用它自动更新。\n' \
+      "$PROG_NAME" "$sign_key_path" >&2
+    printf '%s:        如需发布自动更新，请配置私钥；若只是本地调试，可忽略。\n' "$PROG_NAME" >&2
+  fi
+fi

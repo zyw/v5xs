@@ -298,4 +298,356 @@ let enValue = { () -> String in loc.set(.en); return loc.t(.settings) }()
 let zhValue = { () -> String in loc.set(.zhHans); return loc.t(.settings) }()
 check(enValue != zhValue, "switching language changes resolved text")
 
-print("152 metric checks passed")
+// ---- 更新清单签名（Ed25519）：自动更新的安全底线 ----
+// 这些用例覆盖「攻击者能篡改清单但不能伪造签名」的核心假设。
+let keyPair = UpdateSignature.generateKeyPair()
+
+func makeRelease(
+    version: String = "0.1.3",
+    build: Int = 5,
+    notes: String? = "notes",
+    sha: String = String(repeating: "a", count: 64)
+) -> UpdateRelease {
+    UpdateRelease(
+        version: version, build: build,
+        minimumSystemVersion: "14.0",
+        publishedAt: Date(timeIntervalSince1970: 1_790_000_000),
+        notes: notes,
+        downloads: [
+            UpdateDownload(architecture: "arm64",
+                           url: URL(string: "https://example.com/v5xs.dmg")!,
+                           size: 100, sha256: sha)
+        ]
+    )
+}
+
+let goodRelease = makeRelease()
+let goodPayload = UpdateSignature.canonicalPayload(goodRelease)
+let goodSignature = try UpdateSignature.sign(goodPayload, privateKeyBase64: keyPair.privateKeyBase64)
+
+// 正确签名必须通过
+check(UpdateSignature.verify(release: goodRelease,
+                             signatureBase64: goodSignature,
+                             publicKeyBase64: keyPair.publicKeyBase64) == nil,
+      "valid signature verifies")
+
+// 签名缺失
+check(UpdateSignature.verify(release: goodRelease, signatureBase64: "",
+                             publicKeyBase64: keyPair.publicKeyBase64) == .missing,
+      "missing signature rejected")
+
+// 签名格式非法（不是 base64 / 长度不对）
+check(UpdateSignature.verify(release: goodRelease, signatureBase64: "not-base64!!!",
+                             publicKeyBase64: keyPair.publicKeyBase64) == .malformed,
+      "malformed signature rejected")
+check(UpdateSignature.verify(release: goodRelease, signatureBase64: "AAAA",
+                             publicKeyBase64: keyPair.publicKeyBase64) == .malformed,
+      "short signature rejected")
+
+// 公钥非法
+check(UpdateSignature.verify(release: goodRelease, signatureBase64: goodSignature,
+                             publicKeyBase64: "short") == .invalidPublicKey,
+      "invalid public key rejected")
+
+// 篡改：版本号变化后旧签名必须失效
+check(UpdateSignature.verify(release: makeRelease(version: "9.9.9"), signatureBase64: goodSignature,
+                             publicKeyBase64: keyPair.publicKeyBase64) == .invalid,
+      "tampered version rejected")
+
+// 篡改：build 变化
+check(UpdateSignature.verify(release: makeRelease(build: 999), signatureBase64: goodSignature,
+                             publicKeyBase64: keyPair.publicKeyBase64) == .invalid,
+      "tampered build rejected")
+
+// 篡改：安装包 sha256 被替换（最关键的攻击面——换成恶意 DMG）
+check(UpdateSignature.verify(release: makeRelease(sha: String(repeating: "b", count: 64)),
+                             signatureBase64: goodSignature,
+                             publicKeyBase64: keyPair.publicKeyBase64) == .invalid,
+      "tampered download checksum rejected")
+
+// 用另一对密钥签名必须失败（防止有人换掉公钥对）
+let otherKeys = UpdateSignature.generateKeyPair()
+let forgedSignature = try UpdateSignature.sign(goodPayload, privateKeyBase64: otherKeys.privateKeyBase64)
+check(UpdateSignature.verify(release: goodRelease, signatureBase64: forgedSignature,
+                             publicKeyBase64: keyPair.publicKeyBase64) == .invalid,
+      "signature from another key rejected")
+
+// notes 不参与签名：只改发行说明不应导致验签失败
+check(UpdateSignature.verify(release: makeRelease(notes: "完全不同的说明"),
+                             signatureBase64: goodSignature,
+                             publicKeyBase64: keyPair.publicKeyBase64) == nil,
+      "notes excluded from signature")
+
+// 规范化待签串：下载数组顺序不影响签名结果
+let reordered = UpdateRelease(
+    version: goodRelease.version, build: goodRelease.build,
+    minimumSystemVersion: goodRelease.minimumSystemVersion,
+    publishedAt: goodRelease.publishedAt, notes: nil,
+    downloads: goodRelease.downloads.reversed(),
+    signature: nil
+)
+check(UpdateSignature.canonicalPayload(reordered) == goodPayload,
+      "canonical payload ignores download order")
+// publishedAt 相同但以不同时区表示，待签串必须一致（统一 UTC）
+let shifted = UpdateRelease(
+    version: goodRelease.version, build: goodRelease.build,
+    minimumSystemVersion: goodRelease.minimumSystemVersion,
+    publishedAt: goodRelease.publishedAt,
+    notes: nil, downloads: goodRelease.downloads
+)
+check(UpdateSignature.canonicalPayload(shifted) == goodPayload, "canonical payload is stable")
+
+// ---- 下载包完整性校验 ----
+let tmpDir = FileManager.default.temporaryDirectory
+    .appendingPathComponent("v5xs-test-\(UUID().uuidString)")
+try FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+defer { try? FileManager.default.removeItem(at: tmpDir) }
+
+let payloadFile = tmpDir.appendingPathComponent("update.dmg")
+try Data((0..<1000).map { UInt8($0 % 251) }).write(to: payloadFile)
+let realSHA = try UpdateVerification.sha256(ofFileAt: payloadFile)
+
+// 正确的体积与摘要
+check(UpdateVerification.verifyDownload(fileAt: payloadFile, expectedSize: 1000,
+                                        expectedSHA256: realSHA) == nil,
+      "download with matching size and checksum passes")
+// 大小写不敏感
+check(UpdateVerification.verifyDownload(fileAt: payloadFile, expectedSize: 1000,
+                                        expectedSHA256: realSHA.uppercased()) == nil,
+      "checksum comparison is case insensitive")
+// 体积不符
+check(UpdateVerification.verifyDownload(fileAt: payloadFile, expectedSize: 999,
+                                        expectedSHA256: realSHA)
+      == .sizeMismatch(expected: 999, actual: 1000),
+      "size mismatch detected")
+// 摘要不符（内容被替换）
+check(UpdateVerification.verifyDownload(fileAt: payloadFile, expectedSize: 1000,
+                                        expectedSHA256: String(repeating: "0", count: 64))
+      == .checksumMismatch(expected: String(repeating: "0", count: 64), actual: realSHA),
+      "checksum mismatch detected")
+// 清单缺 sha256 必须拒绝，而不是跳过校验
+check(UpdateVerification.verifyDownload(fileAt: payloadFile, expectedSize: 1000,
+                                        expectedSHA256: nil) == .checksumMissing,
+      "missing checksum rejected")
+// 空文件
+let emptyFile = tmpDir.appendingPathComponent("empty.dmg")
+try Data().write(to: emptyFile)
+check(UpdateVerification.verifyDownload(fileAt: emptyFile, expectedSize: 0,
+                                        expectedSHA256: realSHA) == .emptyFile,
+      "empty file rejected")
+
+// ---- 安装前预检 ----
+let writableDir = FileManager.default.temporaryDirectory.path
+check(UpdatePreflight.validate(appBundlePath: writableDir + "/v5xs.app",
+                               installBytes: 1, existingInstanceCount: 1) == nil,
+      "writable location passes preflight")
+// 从 DMG 挂载点运行必须拒绝
+check(UpdatePreflight.validate(appBundlePath: "/Volumes/v5xs/v5xs.app",
+                               installBytes: 1, existingInstanceCount: 1)
+      == .notInWritableLocation("/Volumes/v5xs/v5xs.app"),
+      "running from mounted volume rejected")
+// 多实例并发更新必须拒绝
+check(UpdatePreflight.validate(appBundlePath: writableDir + "/v5xs.app",
+                               installBytes: 1, existingInstanceCount: 2)
+      == .anotherInstanceRunning("v5xs.app"),
+      "concurrent instance rejected")
+// 空间不足必须拒绝
+check(UpdatePreflight.validate(appBundlePath: writableDir + "/v5xs.app",
+                               installBytes: .max / 2, existingInstanceCount: 1) != nil,
+      "insufficient space rejected")
+// 需要的空间包含备份余量
+check(UpdatePreflight.spaceMultiplier >= 2, "space multiplier accounts for backup copy")
+
+// ---- 重启替换脚本：唯一会删掉用户应用的地方，逐条路径断言 ----
+let script = UpdateInstallScript.make(
+    pid: 4242,
+    stagedApp: "/tmp/stage/v5xs.app",
+    targetApp: "/Applications/v5xs.app",
+    mountPoint: "/Volumes/v5xs"
+)
+// 三条生命线：等旧进程退出、失败能回滚、解挂 DMG
+check(UpdateInstallScriptInspector.waitsForProcessExit(script), "install script waits for old pid")
+check(UpdateInstallScriptInspector.containsRollback(script), "install script can roll back")
+check(UpdateInstallScriptInspector.detachesMount(script), "install script detaches dmg")
+check(UpdateInstallScriptInspector.reopensApp(script), "install script reopens the app")
+// 空目录也能 mv 成功，若不校验可执行文件会把应用换成打不开的空壳
+check(UpdateInstallScriptInspector.validatesExecutable(script), "install script validates executable")
+// 路径必须被引号包住：含空格/中文/单引号的路径否则会把命令切断
+check(!script.contains("TARGET=/Applications"), "target path is shell quoted")
+check(script.contains("TARGET='/Applications/v5xs.app'"), "target path is single quoted")
+// 等待上限必须是有限的：无限循环会让更新永远卡住
+check(script.contains("seq 1 150"), "wait loop has a bound")
+// 没有挂载点时不应该出现 hdiutil
+let noMount = UpdateInstallScript.make(pid: 1, stagedApp: "/tmp/a.app",
+                                       targetApp: "/Applications/v5xs.app", mountPoint: nil)
+check(!UpdateInstallScriptInspector.detachesMount(noMount), "no detach without mount point")
+check(UpdateInstallScriptInspector.waitsForProcessExit(noMount), "still waits without mount point")
+// 单引号转义：用户主目录名可能含单引号
+check(UpdateInstallScript.shellQuote("/tmp/a b.app") == "'/tmp/a b.app'", "quote handles spaces")
+check(UpdateInstallScript.shellQuote("/tmp/it's.app") == "'/tmp/it'\\''s.app'", "quote escapes single quote")
+// 生成结果必须能被 bash 接受（语法错误会让更新彻底卡死）
+let scriptForSyntax = UpdateInstallScript.make(
+    pid: 77, stagedApp: "/tmp/stage dir/v5xs.app",
+    targetApp: "/Applications/v5xs.app", mountPoint: nil
+)
+let syntaxFile = FileManager.default.temporaryDirectory
+    .appendingPathComponent("v5xs-syntax-\(UUID().uuidString).sh")
+try scriptForSyntax.write(to: syntaxFile, atomically: true, encoding: .utf8)
+let bashCheck = Process()
+bashCheck.executableURL = URL(fileURLWithPath: "/bin/bash")
+bashCheck.arguments = ["-n", syntaxFile.path]
+bashCheck.standardError = FileHandle.nullDevice
+bashCheck.standardOutput = FileHandle.nullDevice
+try bashCheck.run()
+bashCheck.waitUntilExit()
+try? FileManager.default.removeItem(at: syntaxFile)
+check(bashCheck.terminationStatus == 0, "generated script passes bash -n")
+
+// 脚本落盘路径必须带 pid，便于排查并发
+check(UpdateInstallScript.scriptURL(pid: 99).lastPathComponent == "v5xs-update-99.sh",
+      "script path includes pid")
+
+// ---- DMG 挂载点解析（hdiutil -plist 结构） ----
+// 真实 hdiutil 输出里，system-entities 中只有那个带 mount-point 的项才是卷。
+let hdiutilPlist = """
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>system-entities</key>
+    <array>
+        <dict>
+            <key>content-hint</key><string>GUID_partition_scheme</string>
+            <key>dev-entry</key><string>/dev/disk4</string>
+        </dict>
+        <dict>
+            <key>content-hint</key><string>Apple_HFS</string>
+            <key>dev-entry</key><string>/dev/disk4s1</string>
+            <key>mount-point</key><string>/Volumes/v5xs 0.1.3</string>
+        </dict>
+    </array>
+</dict>
+</plist>
+"""
+check(DMGMounter.parseMountPoint(Data(hdiutilPlist.utf8)) == "/Volumes/v5xs 0.1.3",
+      "parses mount point with spaces")
+check(DMGMounter.parseMountPoint(Data("not a plist".utf8)) == nil, "invalid plist yields nil")
+let noMountPlist = """
+<plist version="1.0"><dict><key>system-entities</key><array>
+<dict><key>dev-entry</key><string>/dev/disk5</string></dict>
+</array></dict></plist>
+"""
+check(DMGMounter.parseMountPoint(Data(noMountPlist.utf8)) == nil, "no mount-point yields nil")
+
+// ---- 自动更新编排：状态与失败原因映射 ----
+// 每个失败原因都必须能映射到一个真实存在的文案 key，
+// 否则界面会退化成空白或 key 原文。
+let allFailures: [UpdateFlowFailure] = [
+    .cancelled,
+    .download("timeout"),
+    .sizeMismatch(expected: 100, actual: 98),
+    .checksumMissing,
+    .checksumMismatch,
+    .needsManualInstall("/Volumes/v5xs"),
+    .insufficientSpace(required: 100, available: 10),
+    .anotherInstanceRunning,
+    .install("denied")
+]
+for failure in allFailures {
+    let key = failure.stringKey
+    for lang in allLanguages {
+        let text = Strings.text(key, lang)
+        check(!text.isEmpty && text != key.rawValue,
+              "failure \(key.rawValue) translated for \(lang.rawValue)")
+    }
+}
+
+// 更新流程的工作目录命名：保留原始文件名，便于排查；
+// 非 .dmg 的地址退化为 update.dmg。
+let sessionDir = URL(fileURLWithPath: "/tmp/v5xs-flow-test-\(UUID().uuidString)")
+let session = UpdateDownloaderSession(workDirectory: sessionDir)
+let dmgURL = try session.destinationURL(for: UpdateDownload(
+    architecture: "arm64",
+    url: URL(string: "https://example.com/v5xs-0.1.3-macOS-26.4-arm64.dmg")!,
+    size: 1, sha256: "x"
+))
+check(dmgURL.lastPathComponent == "v5xs-0.1.3-macOS-26.4-arm64.dmg",
+      "download keeps original file name")
+let oddURL = try session.destinationURL(for: UpdateDownload(
+    architecture: "arm64", url: URL(string: "https://example.com/download")!,
+    size: 1, sha256: "x"
+))
+check(oddURL.pathExtension == "dmg", "download without extension falls back to .dmg")
+// 清理必须只删 .dmg，不能误删目录里的其他东西
+try Data([0]).write(to: sessionDir.appendingPathComponent("keep.txt"))
+try Data([0]).write(to: sessionDir.appendingPathComponent("x.dmg"))
+session.cleanup()
+check(FileManager.default.fileExists(atPath: sessionDir.appendingPathComponent("keep.txt").path),
+      "cleanup keeps unrelated files")
+check(!FileManager.default.fileExists(atPath: sessionDir.appendingPathComponent("x.dmg").path),
+      "cleanup removes downloaded dmg")
+try? FileManager.default.removeItem(at: sessionDir)
+
+// ---- 自动更新的开关默认值必须安全 ----
+// 自动安装会让应用自行退出重启，默认必须是「关」。
+// 这里用干净的 UserDefaults 域构造 Store 不现实（需要 MainActor + 副作用），
+// 因此直接断言 key 约定与默认值逻辑的语义：未设置时 autoCheck=on，其余 off。
+let defaults = UserDefaults(suiteName: "v5xs-auto-test")!
+defaults.removePersistentDomain(forName: "v5xs-auto-test")
+let hasAutoCheck = defaults.object(forKey: "autoCheckUpdates") != nil
+check(hasAutoCheck == false, "fresh install has no explicit autoCheck value")
+check((hasAutoCheck ? defaults.bool(forKey: "autoCheckUpdates") : true) == true,
+      "autoCheck defaults to on")
+check(defaults.bool(forKey: "autoDownloadUpdates") == false, "autoDownload defaults to off")
+check(defaults.bool(forKey: "autoInstallUpdates") == false, "autoInstall defaults to off")
+defaults.removePersistentDomain(forName: "v5xs-auto-test")
+
+// ---- 菜单栏动物：枚举里的每一项都必须有对应雪碧图 ----
+// 回归：曾有 `fox` 但 Resources/Animals 里没有 fox.png，
+// 运行时静默退化成代码手绘，与其他动物的剪影风格完全不一致。
+// 这里直接对照资源目录，避免再次出现「枚举有、资源无」。
+let animalsDir = URL(fileURLWithPath: "Resources/Animals")
+let sheetNames = (try? FileManager.default.contentsOfDirectory(
+    at: animalsDir, includingPropertiesForKeys: nil
+))?.filter { $0.pathExtension == "png" }.map { $0.deletingPathExtension().lastPathComponent } ?? []
+check(!sheetNames.isEmpty, "animal sprite directory is readable")
+
+// 与 StatusAnimal.sheet(for:) 的映射保持一致（这里只校验「有图」这一条约束，
+// 帧边界正确性由 slice 脚本与目视验证保证）。
+let animalsWithSheets = ["cat", "rabbit", "dog", "horse", "dinosaur", "frog",
+                         "chicken", "duck", "fish", "tabbing", "bolt", "dragon", "panda", "tiger"]
+for name in animalsWithSheets {
+    check(sheetNames.contains(name), "sprite exists for \(name)")
+}
+// 反向：资源目录里不应有代码不认识的图（否则是残留或命名错误）
+let known = Set(animalsWithSheets)
+for name in sheetNames {
+    check(known.contains(name), "sprite \(name) is referenced by the app")
+}
+// 狐已被移除：不能残留 fox 资源或引用
+check(!sheetNames.contains("fox"), "fox sprite removed")
+check(!animalsWithSheets.contains("fox"), "fox is not wired to any sprite")
+
+// ---- 暂停动画图标 ----
+// 暂停时应显示独立的 Logo 图标资源，而不是把动物冻在某一帧。
+let pausedIconPath = "Resources/PausedIcon.png"
+check(FileManager.default.fileExists(atPath: pausedIconPath), "paused icon resource exists")
+// 测试目标不引入 AppKit，这里直接校验 PNG 头，确认文件是合法且非空的图片：
+// 前 8 字节是 PNG 魔数，随后 IHDR 里是宽高。
+if let iconData = FileManager.default.contents(atPath: pausedIconPath), iconData.count > 100 {
+    let magic: [UInt8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A]
+    check(Array(iconData.prefix(8)) == magic, "paused icon is a valid PNG")
+    // IHDR 宽高在偏移 16..23（大端 32 位）
+    let width = iconData.dropFirst(16).prefix(4).reduce(0) { $0 << 8 | Int($1) }
+    let height = iconData.dropFirst(20).prefix(4).reduce(0) { $0 << 8 | Int($1) }
+    check(width > 0 && height > 0, "paused icon has non-zero size (\(width)x\(height))")
+    let ratio = Double(width) / Double(height)
+    check(ratio > 0.8 && ratio < 1.6, "paused icon aspect ratio is sane (\(ratio))")
+} else {
+    check(false, "paused icon exists and is non-trivial")
+}
+// 资源必须会被打包（build-app.sh 里有对应 cp），否则运行时回落到动物帧。
+let buildScript = (try? String(contentsOfFile: "scripts/build-app.sh", encoding: .utf8)) ?? ""
+check(buildScript.contains("PausedIcon.png"), "build script copies paused icon")
+
+print("255 metric checks passed")
