@@ -42,6 +42,7 @@ public enum StringKey: String, CaseIterable, Sendable {
     case settingsGeneral, settingsMonitoring, settingsUpdate, settingsLanguage, settingsAbout
     case language, languageHint, languageRestartHint
     case aboutVersion, aboutSystem, aboutCpu, aboutUptime
+    case aboutLinks, aboutAppRepo, aboutHomepage, aboutAuthorGithub
     case uptimeDaysHours, uptimeDuration, uptimeLabel, previewTitle
     case updateDownloadAndInstall, updateDownloading, updateVerifying, updatePreparing, updateRestarting, updateCancel, updateFailureCancelled, updateFailureDownload, updateFailureChecksum, updateFailureManualInstall, updateFailureNoSpace, updateFailureMultipleInstances, updateFailureInstall, updateInstallHint, updateSettingsAutoCheck, updateSettingsAutoDownload, updateSettingsAutoInstall, updateSettingsAutoInstallHint, updateInstallNow, updateReadyBanner, updateManualFallback
     case updateSignatureMissing, updateSignatureMalformed, updateSignatureInvalid, updateSigningKeyInvalid, updateChecksumMissing
@@ -376,6 +377,10 @@ public enum Strings {
         .updateInstallNow: "立即安装并重启",
         .updateReadyBanner: "更新已就绪，重启后生效。",
         .updateManualFallback: "手动下载",
+        .aboutLinks: "链接",
+        .aboutAppRepo: "项目主页",
+        .aboutHomepage: "个人主页",
+        .aboutAuthorGithub: "作者 GitHub",
     ]
 
     static let hant: [StringKey: String] = [
@@ -677,6 +682,10 @@ public enum Strings {
         .updateInstallNow: "立即安裝並重新啟動",
         .updateReadyBanner: "更新已就緒，重新啟動後生效。",
         .updateManualFallback: "手動下載",
+        .aboutLinks: "連結",
+        .aboutAppRepo: "專案首頁",
+        .aboutHomepage: "個人首頁",
+        .aboutAuthorGithub: "作者 GitHub",
     ]
 
     static let en: [StringKey: String] = [
@@ -967,10 +976,9 @@ public enum Strings {
         .updateFailureDownload: "Download failed. Check your connection and try again.",
         .updateFailureChecksum: "The package failed verification and may be corrupted. Please try again.",
         .updateFailureManualInstall: "Cannot install automatically: the location (%@) is not writable. Move v5xs into Applications and retry, or install manually.",
-        .updateFailureNoSpace: "Not enough disk space: about %@ needed, %@ available.",
-        .updateFailureMultipleInstances: "Multiple v5xs instances are running. Quit the others before updating.",
-        .updateFailureInstall: "Could not prepare the installation: %@",
-        .updateInstallHint: "After downloading, v5xs verifies the package and restarts to install.",
-        .updateSettingsAutoCheck: "Check for updates automatically (every 24 hours)",
+        .aboutLinks: "Links",
+        .aboutAppRepo: "Project on GitHub",
+        .aboutHomepage: "Homepage",
+        .aboutAuthorGithub: "Author on GitHub",
     ]
 }

@@ -712,11 +712,31 @@ struct SettingsPanel: View {
             LabeledContent(localization.t(.aboutSystem), value: runtimeSystemText)
             LabeledContent(localization.t(.aboutCpu), value: store.chipName ?? localization.t(.unknown))
             LabeledContent(localization.t(.aboutUptime), value: uptimeText)
+
+            Section(localization.t(.aboutLinks)) {
+                linkRow(localization.t(.aboutAppRepo), "https://github.com/zyw/v5xs")
+                linkRow(localization.t(.aboutHomepage), "https://v5ai.xin")
+                linkRow(localization.t(.aboutAuthorGithub), "https://github.com/zyw")
+            }
+
             Text(localization.t(.gpuTemperatureHint))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
         .formStyle(.grouped)
+    }
+
+    /// 一行可点击的外链。用 Link 而不是 Button + openURL：
+    /// Link 会自动带上系统的外链视觉样式（悬停变色、右键「打开链接」菜单）。
+    private func linkRow(_ title: String, _ address: String) -> some View {
+        HStack {
+            Text(title)
+            Spacer(minLength: 12)
+            Link(address, destination: URL(string: address)!)
+                .lineLimit(1)
+                .truncationMode(.middle)
+                .help(address)
+        }
     }
 
     private var runtimeSystemText: String {
