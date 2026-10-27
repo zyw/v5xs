@@ -12,14 +12,16 @@ v5xs is a macOS menu-bar system monitor written in **SwiftUI + AppKit**. It show
 
 ## ✨ Features
 
-- **Animated menu bar animal**: runs at your CPU's pace; choose from cat, rabbit, fox, dog, horse, dinosaur, frog, chicken, duck or fish.
+- **Animated menu bar animal**: runs at your CPU's pace; 14 characters (cat, rabbit, dog, horse, dinosaur, frog, chicken, duck, fish, plus sprinter, bolt, dragon, panda and tiger). A logo icon shows while animation is paused.
 - **Real-time system monitoring**: CPU usage & core topology, GPU activity, memory, disk read/write, network up/down graph, temperature & thermal state.
 - **Peripheral battery**: mouse / keyboard Bluetooth battery, plus Mac battery, shown as circular indicators.
 - **High-usage processes**: sort by memory / CPU, terminate or force-quit (with confirmation).
 - **App uninstaller**: tap the score card at the top of the panel to open a dedicated window; sort by name / size / last-used / install date, batch-select apps, review related files, then move them to Trash.
 - **Startup items manager**: lists login items, LaunchAgents & LaunchDaemons grouped by source, with one-click enable / disable.
 - **App list caching**: scan results are cached locally; the cache duration is adjustable in Settings (default 30 days).
-- **Update check**: compares the published manifest against `CFBundleVersion`, shows the new version and release notes in Settings, and opens the download page in one click.
+- **Automatic updates**: downloads, verifies, replaces and relaunches by itself — or just notifies you and lets you decide when to install. Manifests are Ed25519-signed.
+- **Configurable refresh rate**: 0.5 / 1 / 2 / 5 seconds, applied immediately.
+- **Three languages**: Simplified Chinese, Traditional Chinese and English, switchable in Settings without a restart.
 
 ## 📸 Screenshots
 
@@ -34,7 +36,10 @@ v5xs is a macOS menu-bar system monitor written in **SwiftUI + AppKit**. It show
 
 ### Run directly (recommended)
 
-Download the latest release from [Releases](../../releases) and drag `v5xs.dmg`'s app into the “Applications” folder.
+Download the latest DMG from [Releases](../../releases) (e.g. `v5xs-0.1.3-macOS-26.4-arm64.dmg`) and drag v5xs into the “Applications” folder.
+
+> Gatekeeper may block the first launch (the build is ad-hoc signed); allow it under System Settings → Privacy & Security.
+> Once 0.1.3 is installed, later versions can update themselves from within the app.
 
 ### Build from source
 
@@ -69,7 +74,8 @@ bash scripts/build-dmg.sh
 - **Right-click the menu bar animal**: switch character, pause animation, enable launch at login, open Settings, or quit.
 - **Click the score card at the top of the panel**: open the software uninstaller window.
 - The uninstaller window has two tabs at the top: **Uninstall / Startup Items**.
-- **Right-click menu → Check for Updates…**: check manually; the item shows the version number once an update is found. The “Updates” section in Settings shows the current version, last check time and result.
+- **Right-click menu → Check for Updates…**: opens Settings on the “Updates” section and checks immediately; the item shows the version number once an update is found.
+- **Right-click menu → Settings…**: opens Settings, always on the “General” page. A sidebar splits it into General / Monitoring / Updates / Language / About.
 
 ## 🧭 Data & Limitations
 
@@ -79,20 +85,32 @@ bash scripts/build-dmg.sh
 - The top score is an **estimate** based on thermal state, CPU and memory usage — not a hardware diagnostic.
 - Uninstaller: last-used comes from Spotlight (shows “unknown” when unavailable); sizes are scanned estimates. Related files are matched against the current user's `~/Library` by bundle ID; shared files and files of unclear ownership are not auto-selected. Confirmed files are moved to the system Trash. The app list is cached locally (default 30 days, adjustable in Settings).
 - Startup items: login items, LaunchAgents & LaunchDaemons are shown grouped by source. User-level agents can be toggled directly; system agents & daemons require admin privileges; third-party login items are best managed in “System Settings → General → Login Items”.
-- Process termination depends on app permissions and runs only on identifiable GUI apps; **sandbox distribution cannot use these cross-app termination operations**.
+- Process identity is resolved through `libproc` / `sysctl` (full path plus start time), so non-GUI processes — java, helpers, daemons — work too; identity is re-checked before signalling to avoid killing a recycled PID. Insufficient permissions produce a specific explanation. **Sandbox distribution cannot use these cross-app termination operations**.
 
-## 🔄 Update Checks
+## 🔄 Automatic Updates
 
-v5xs uses a lightweight “manifest + open the download page” flow and never replaces itself silently:
+v5xs can download, verify, replace and relaunch itself — or simply notify you and let you decide when to install.
+**User-facing guide: [docs/auto-update-guide.md](docs/auto-update-guide.md).**
 
 1. On launch it checks in the background if the last check is older than 24 hours; you can also trigger it from the right-click menu or Settings.
 2. The client fetches the `update.json` manifest from `V5XSUpdateFeedURL` in `Info.plist` via `URLSession` — a fixed-name file published as a **GitHub Release asset** (`releases/latest/download/update.json` always points at the newest; override with `V5XS_UPDATE_FEED` for local testing).
-3. The manifest carries the version, build number, minimum system version, release notes, and per-architecture download URL / size / SHA-256.
-4. The client compares `CFBundleVersion` (falling back to semantic version when equal). When a newer build exists and the current OS meets the minimum requirement, it shows the version, release notes and a “Download DMG” button that opens the URL with `NSWorkspace`.
+3. The manifest carries the version, build number, minimum system version, release notes, per-architecture download URL / size / SHA-256, and an **Ed25519 signature**.
+4. The client compares `CFBundleVersion` (falling back to semantic version when equal); a newer build is accepted only after the signature verifies.
+5. "Download and Install" runs: download → SHA-256 check → mount DMG → verify bundle ID → copy into a staging dir on the same volume → quit → an independent script swaps the bundle atomically (rolling back on failure) → relaunch.
 
-Publishing uses `scripts/make-update-manifest.sh`; see [docs/update-publish.md](docs/update-publish.md) for the release flow and [docs/update-research.md](docs/update-research.md) for the comparison of update approaches.
+Three progressive toggles in the Updates page: auto-check (on), auto-download (off), auto-install (off).
 
-> Current scope: check and hand off to the browser only — no download, replacement or relaunch. The manifest and archives are served over HTTPS; `downloads[].sha256` is reserved for a future signature/checksum verification step.
+Publishing uses `scripts/make-update-manifest.sh`, which signs the manifest by default and pairs with [.github/workflows/publish-update-feed.yml](.github/workflows/publish-update-feed.yml) to upload `update.json` as a release asset. A signing secret must be configured in the repository first — see [docs/update-signing.md](docs/update-signing.md); release flow in [docs/update-publish.md](docs/update-publish.md); design comparison in [docs/update-research.md](docs/update-research.md).
+
+<p align="center">
+  <img src="docs/update-section.png" width="420" alt="Updates section in Settings" />
+</p>
+
+**Security model**: the build is ad-hoc signed, so code-signature verification can't establish identity. The trust root for updates is the **Ed25519 public key compiled into the app** — a manifest is only accepted if it carries a signature made with the matching private key. This matters because the SHA-256 inside a manifest comes from the same HTTPS response as the manifest itself: if the feed is hijacked, both can be swapped together and checksums prove nothing.
+
+Hard checks before installing (any failure aborts): manifest signature → package size & SHA-256 → bundle ID inside the package → free disk space → whether the app runs from a read-only location → whether multiple instances are running.
+
+**Known limits**: no downgrade path; when `/Applications` is not writable the app tells you to install manually rather than failing silently.
 
 ## ✅ Tested Environment
 
@@ -109,7 +127,9 @@ Publishing uses `scripts/make-update-manifest.sh`; see [docs/update-publish.md](
 
 - Swift 6 · SwiftUI · AppKit · Charts
 - Swift Package Manager (`Package.swift`)
-- Sampling: CPU / GPU / network every 1s; temperature and other metrics less frequently; bounded in-memory history.
+- Sampling: CPU / GPU / network use the configurable refresh rate (default 1s; 0.5 / 1 / 2 / 5s); temperature and other metrics less frequently; bounded in-memory history.
+- Localization: runtime string table injected through the SwiftUI environment; switching language needs no restart.
+- Update verification: CryptoKit (Ed25519 + SHA-256).
 
 ## 📄 License
 
