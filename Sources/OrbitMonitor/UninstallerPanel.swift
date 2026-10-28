@@ -752,7 +752,7 @@ struct UninstallerPanel: View {
                     if sort == option { ascending.toggle() } else { sort = option; ascending = option != .size }
                 } label: {
                     VStack(spacing: 1) {
-                        Text(option.rawValue + (sort == option ? (ascending ? " ↑" : " ↓") : ""))
+                        Text(option.title + (sort == option ? (ascending ? " ↑" : " ↓") : ""))
                             .font(.system(size: 11.5, weight: .semibold))
                             .foregroundStyle(sort == option ? UninstallStyle.mint : UninstallStyle.faint)
                         Rectangle().fill(sort == option ? UninstallStyle.mint : .clear).frame(width: 16, height: 2)
@@ -829,7 +829,11 @@ struct UninstallerPanel: View {
 
     private func relative(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
+        switch Localization.shared.language {
+        case .zhHans: formatter.locale = Locale(identifier: "zh_Hans")
+        case .zhHant: formatter.locale = Locale(identifier: "zh_Hant")
+        case .en: formatter.locale = Locale(identifier: "en")
+        }
         formatter.unitsStyle = .short
         return formatter.localizedString(for: date, relativeTo: Date())
     }

@@ -331,7 +331,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.isReleasedWhenClosed = false
             window.delegate = self
             window.minSize = NSSize(width: 780, height: 560)
-            window.contentView = NSHostingView(rootView: UninstallerPanel())
+            window.contentView = NSHostingView(rootView: UninstallerPanel().localized(localization))
             uninstallerWindow = window
             window.center()
         }
