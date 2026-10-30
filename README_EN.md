@@ -36,10 +36,10 @@ v5xs is a macOS menu-bar system monitor written in **SwiftUI + AppKit**. It show
 
 ### Run directly (recommended)
 
-Download the latest DMG from [Releases](../../releases) (e.g. `v5xs-0.1.3-macOS-26.4-arm64.dmg`) and drag v5xs into the “Applications” folder.
+Download the latest DMG from [Releases](../../releases) (e.g. `v5xs-0.1.4-macOS-26.4-arm64.dmg`) and drag v5xs into the “Applications” folder.
 
 > Gatekeeper may block the first launch (the build is ad-hoc signed); allow it under System Settings → Privacy & Security.
-> Once 0.1.3 is installed, later versions can update themselves from within the app.
+> Once 0.1.4 is installed, later versions can update themselves from within the app.
 
 ### Build from source
 
