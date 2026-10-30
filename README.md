@@ -7,7 +7,7 @@
 v5xs 是一款用 SwiftUI + AppKit 编写的 macOS 菜单栏系统监控工具。菜单栏只保留一只动物剪影：系统越忙它跑得越快，低负载时依然连贯。左键打开悬浮监控面板，右键即可更换形象或进入设置。
 
 <p align="center">
-  <img src="docs/screenshot-monitor.png" width="360" alt="v5xs 监控面板截图" />
+  <img src="images/monitor.png" width="360" alt="v5xs 监控面板截图" />
 </p>
 
 ## ✨ 特性
@@ -27,7 +27,7 @@ v5xs 是一款用 SwiftUI + AppKit 编写的 macOS 菜单栏系统监控工具�
 
 | 🖥️ 监控面板 | 🗑️ 软件卸载 | ⚙️ 启动项 |
 | --- | --- | --- |
-| <img src="docs/screenshot-monitor.png" width="300" alt="监控面板" /> | <img src="design-demos/images/uninstall.png" width="300" alt="软件卸载" /> | <img src="design-demos/images/start-item.png" width="300" alt="启动项" /> |
+| <img src="images/monitor.png" width="300" alt="监控面板" /> | <img src="images/uninstall.png" width="300" alt="软件卸载" /> | <img src="images/start-item.png" width="300" alt="启动项" /> |
 | 实时系统状态总览 | 按需选择并核对关联文件后移入废纸篓 | 按来源分组管理开机自启项 |
 
 > 更多界面的静态展示与可点击原型见 [docs/uninstall-design.md](docs/uninstall-design.md) 与 [docs/uninstall-prototype.html](docs/uninstall-prototype.html)（原型使用演示数据，不会移动文件）。
@@ -103,7 +103,7 @@ v5xs 可以自己下载新版、校验、替换并重启，也可以只提醒、
 发布侧用 `scripts/make-update-manifest.sh`（默认按发布 tag 生成不可变的 DMG 下载地址，并自动签名）生成清单，可配合 [.github/workflows/publish-update-feed.yml](.github/workflows/publish-update-feed.yml) 把 `update.json` 自动上传为 Release 附件。发版前需在仓库配置签名 secret，见 [docs/update-signing.md](docs/update-signing.md)；发布流程见 [docs/update-publish.md](docs/update-publish.md)；各方案对比与选型理由见 [docs/update-research.md](docs/update-research.md)。
 
 <p align="center">
-  <img src="docs/update-section.png" width="420" alt="设置页的更新分区" />
+  <img src="images/update-section.png" width="420" alt="设置页的更新分区" />
 </p>
 
 **安全模型**：当前为 ad-hoc 签名，无法做真正的代码签名验证。自动更新的信任根是**内嵌在 App 里的 Ed25519 公钥**——清单必须带对应私钥签出的签名才会被接受。这样做的原因：清单里的 SHA-256 与清单本身来自同一个 HTTPS 响应，若清单源被劫持，两者可一起替换，单纯校验和毫无意义。
