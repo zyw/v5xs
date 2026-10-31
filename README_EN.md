@@ -96,7 +96,7 @@ v5xs can download, verify, replace and relaunch itself — or simply notify you 
 2. The client fetches the `update.json` manifest from `V5XSUpdateFeedURL` in `Info.plist` via `URLSession` — a fixed-name file published as a **GitHub Release asset** (`releases/latest/download/update.json` always points at the newest; override with `V5XS_UPDATE_FEED` for local testing).
 3. The manifest carries the version, build number, minimum system version, release notes, per-architecture download URL / size / SHA-256, and an **Ed25519 signature**.
 4. The client compares `CFBundleVersion` (falling back to semantic version when equal); a newer build is accepted only after the signature verifies.
-5. "Download and Install" runs: download → SHA-256 check → mount DMG → verify bundle ID → copy into a staging dir on the same volume → quit → an independent script swaps the bundle atomically (rolling back on failure) → relaunch.
+5. "Download Update" runs: download → SHA-256 check → mount DMG → verify bundle ID → copy into a staging dir on the same volume. If automatic restart is off, click "Update and Restart" beside the version; otherwise the app quits immediately, the script swaps the bundle atomically (rolling back on failure), and the app relaunches.
 
 Three progressive toggles in the Updates page: auto-check (on), auto-download (off), auto-install (off).
 

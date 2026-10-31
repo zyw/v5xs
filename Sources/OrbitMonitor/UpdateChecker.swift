@@ -17,6 +17,7 @@ enum UpdateState: Equatable, Sendable {
 final class UpdateChecker: ObservableObject {
     @Published private(set) var state: UpdateState = .idle
     @Published private(set) var lastCheck: Date?
+    @Published private(set) var releaseNotes: UpdateNotes?
 
     let currentVersion: String
     let currentBuild: Int
@@ -41,6 +42,7 @@ final class UpdateChecker: ObservableObject {
         currentBuild = (bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String).flatMap(Int.init) ?? 1
         feedURL = Self.feedURL(bundle: bundle, environment: environment)
         lastCheck = defaults.object(forKey: Self.lastCheckKey) as? Date
+        releaseNotes = UpdateNotesStore.load(defaults: defaults, currentBuild: currentBuild)
 
         let configuration = URLSessionConfiguration.ephemeral
         configuration.timeoutIntervalForRequest = Self.requestTimeout
@@ -79,7 +81,15 @@ final class UpdateChecker: ObservableObject {
             let data = try await fetch(from: url)
             let release = try UpdateFeed.release(from: data)
             markChecked()
-            state = verdict(for: release)
+            let result = verdict(for: release)
+            switch result {
+            case .available, .upToDate:
+                UpdateNotesStore.save(release, defaults: defaults)
+                releaseNotes = UpdateNotesStore.load(defaults: defaults, currentBuild: currentBuild)
+            case .idle, .checking, .failed:
+                break
+            }
+            state = result
         } catch {
             state = .failed(Self.message(for: error))
         }

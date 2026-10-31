@@ -18,8 +18,8 @@ public final class UpdateFlow: ObservableObject {
     private let session: UpdateDownloaderSession
     private var downloader: UpdateDownloader?
 
-    public init(workDirectory: URL = UpdateFlow.defaultWorkDirectory) {
-        self.session = UpdateDownloaderSession(workDirectory: workDirectory)
+    public init(workDirectory: URL? = nil) {
+        self.session = UpdateDownloaderSession(workDirectory: workDirectory ?? Self.defaultWorkDirectory)
     }
 
     /// 下载文件放在 ~/Library/Caches 下：系统可清理，不污染用户目录。

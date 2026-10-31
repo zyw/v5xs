@@ -4,7 +4,7 @@ import SwiftUI
 
 /// 设置页里的「更新」分组。
 ///
-/// 现在它会真正下载并安装：下载 → 校验 → 替换 → 自动重启。
+/// 下载并校验后按用户设置决定等待确认或自动重启安装。
 /// 同时保留「手动下载」入口——自动安装失败时（比如应用在只读位置），
 /// 用户仍然有路可走，而不是卡死在一个错误提示上。
 struct UpdateSection: View {
@@ -12,6 +12,7 @@ struct UpdateSection: View {
     @ObservedObject var flow: UpdateFlow
     @ObservedObject var store: MonitorStore
     @Environment(\.localization) private var loc
+    @State private var showingReleaseNotes = false
 
     /// 当前可用的更新（如果检查到了）。
     private var available: (UpdateRelease, UpdateDownload)? {
@@ -21,13 +22,35 @@ struct UpdateSection: View {
 
     var body: some View {
         Section(loc.t(.updateSection)) {
-            HStack {
-                Text(loc.t(.currentVersion))
-                Spacer()
-                Text("\(updates.currentVersionText) (build \(updates.currentBuild))")
+            HStack(spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(loc.t(.versionLabel))
+                    statusRow
+                }
+                Spacer(minLength: 8)
+                Text(updates.currentVersionText)
                     .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                if flow.isReadyToRestart {
+                    Button(loc.t(.updateInstallNow)) { restartNow() }
+                } else {
+                    Button(loc.t(.checkForUpdates)) {
+                        Task { await updates.check(force: true) }
+                    }
+                    .disabled(!updates.isEnabled || flow.isBusy)
+                }
             }
-            statusRow
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(loc.t(.updateNotesTitle))
+                    Text(loc.t(updates.releaseNotes == nil ? .updateNotesUnavailable : .updateNotesSubtitle))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button(loc.t(.updateNotesOpen)) { showingReleaseNotes = true }
+                    .disabled(updates.releaseNotes == nil)
+            }
             HStack {
                 Text(loc.t(.lastChecked))
                 Spacer()
@@ -47,10 +70,23 @@ struct UpdateSection: View {
             Text(loc.t(.updateSettingsAutoInstallHint))
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
-            Text(loc.t(.updateFailedHint))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+        }
+        .sheet(isPresented: $showingReleaseNotes) {
+            if let notes = updates.releaseNotes {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("\(loc.t(.updateNotesTitle)) · v\(notes.version)")
+                        .font(.headline)
+                    ScrollView {
+                        ReleaseNotesBody(markdown: notes.text)
+                    }
+                    HStack {
+                        Spacer()
+                        Button(loc.t(.close)) { showingReleaseNotes = false }
+                    }
+                }
+                .padding(20)
+                .frame(minWidth: 420, minHeight: 300)
+            }
         }
     }
 
@@ -70,8 +106,8 @@ struct UpdateSection: View {
                 Image(systemName: "gearshape").foregroundStyle(.tint)
                 Text(loc.t(.updatePreparing))
             case .restarting:
-                Image(systemName: "arrow.clockwise.circle.fill").foregroundStyle(.green)
-                Text(loc.t(.updateRestarting))
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Text(loc.t(.updateReadyBanner))
             case .failed(let reason):
                 Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.orange)
                 Text(failureText(reason)).foregroundStyle(.secondary)
@@ -79,7 +115,6 @@ struct UpdateSection: View {
             case .idle:
                 idleStatus
             }
-            Spacer(minLength: 0)
         }
         .font(.system(size: 11))
     }
@@ -154,7 +189,7 @@ struct UpdateSection: View {
             actionButtons(release: release, download: download)
         }
 
-        if flow.isBusy {
+        if flow.isBusy && !flow.isReadyToRestart {
             // 只有确定总量时才画确定性进度条，否则用不确定态，
             // 避免进度条在 0% 卡住给人「卡死了」的错觉。
             if case let .downloading(received, total) = flow.phase, let total, total > 0 {
@@ -162,25 +197,16 @@ struct UpdateSection: View {
             } else {
                 ProgressView()
             }
-        } else if flow.isReadyToRestart {
-            Button(loc.t(.updateInstallNow)) { restartNow() }
-                .buttonStyle(.borderedProminent)
-        }
-
-        if let notes = release.notes, !notes.isEmpty {
-            Text(notes)
-                .font(.system(size: 10))
-                .foregroundStyle(.secondary)
-                .lineLimit(8)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
     @ViewBuilder
     private func actionButtons(release: UpdateRelease, download: UpdateDownload) -> some View {
-        if flow.isBusy {
+        if flow.isReadyToRestart {
+            EmptyView()
+        } else if flow.isBusy {
             Button(loc.t(.updateCancel)) { flow.cancel() }
-        } else if !flow.isReadyToRestart {
+        } else {
             Button(loc.t(.updateDownloadAndInstall)) {
                 startInstall(release: release, download: download)
             }
@@ -197,12 +223,13 @@ struct UpdateSection: View {
             release: release,
             download: download,
             targetApp: target,
-            onReadyToRestart: { prepared in
-                if store.autoInstallUpdates {
+            onReadyToRestart: { _ in
+                if UpdateAutomation.shouldRestart(
+                    autoDownload: store.autoDownloadUpdates,
+                    autoRestart: store.autoInstallUpdates
+                ) {
                     restartNow()
                 }
-                // 等待用户点「立即安装并重启」
-                _ = prepared
             },
             onFailure: { _ in }
         )
@@ -221,5 +248,72 @@ struct UpdateSection: View {
     private var lastCheckText: String {
         guard let lastCheck = updates.lastCheck else { return loc.t(.neverChecked) }
         return lastCheck.formatted(date: .abbreviated, time: .shortened)
+    }
+}
+
+private struct ReleaseNotesBody: View {
+    let blocks: [ReleaseNotesMarkdown.Block]
+
+    init(markdown: String) {
+        blocks = ReleaseNotesMarkdown.parse(markdown)
+    }
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: 12) {
+            ForEach(blocks.indices, id: \.self) { index in
+                blockView(blocks[index])
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    @ViewBuilder
+    private func blockView(_ block: ReleaseNotesMarkdown.Block) -> some View {
+        switch block.kind {
+        case .heading(let level):
+            Text(block.content)
+                .font(level == 1 ? .title2.bold() : level == 2 ? .title3.bold() : .headline)
+                .textSelection(.enabled)
+                .padding(.top, 6)
+        case .quote:
+            HStack(alignment: .top, spacing: 10) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(.secondary.opacity(0.45))
+                    .frame(width: 3)
+                Text(block.content)
+                    .foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+            }
+            .fixedSize(horizontal: false, vertical: true)
+        case .bullet(let depth):
+            listRow("•", content: block.content, depth: depth)
+        case .number(let ordinal, let depth):
+            listRow("\(ordinal).", content: block.content, depth: depth)
+        case .code:
+            ScrollView(.horizontal) {
+                Text(block.content)
+                    .font(.system(.body, design: .monospaced))
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(10)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+        case .rule:
+            Divider()
+        case .paragraph:
+            Text(block.content)
+                .textSelection(.enabled)
+        }
+    }
+
+    private func listRow(_ marker: String, content: AttributedString, depth: Int) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
+            Text(marker)
+                .frame(minWidth: 18, alignment: .trailing)
+            Text(content)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.leading, CGFloat(depth) * 16)
     }
 }

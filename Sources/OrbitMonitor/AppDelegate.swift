@@ -125,24 +125,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             targetApp: Bundle.main.bundleURL,
             onReadyToRestart: { [weak self] prepared in
                 guard let self else { return }
-                guard self.store.autoInstallUpdates else { return }
-                self.showRestartNoticeThenQuit(prepared)
+                guard UpdateAutomation.shouldRestart(
+                    autoDownload: self.store.autoDownloadUpdates,
+                    autoRestart: self.store.autoInstallUpdates
+                ) else { return }
+                self.restartForUpdate(prepared)
             },
-            onFailure: { [weak self] _ in
-                // 后台自动更新失败不弹窗打扰：用户下次打开设置页能看到原因。
-                self?.updateFlow.reset()
-            }
+            // 保留失败状态，用户打开设置页时能看到原因。
+            onFailure: { _ in }
         )
     }
 
-    /// 自动安装前给一个短提示，然后退出并重启。
-    private func showRestartNoticeThenQuit(_ prepared: UpdateInstaller.Prepared) {
-        let alert = NSAlert()
-        alert.messageText = localization.t(.updateRestarting)
-        alert.informativeText = localization.t(.updateSettingsAutoInstallHint)
-        alert.addButton(withTitle: localization.t(.ok))
-        alert.runModal()
-
+    /// 自动重启已由用户在设置中开启，脚本启动后直接退出。
+    private func restartForUpdate(_ prepared: UpdateInstaller.Prepared) {
         guard UpdateInstaller.launch(prepared) else {
             updateFlow.markInstallLaunchFailed()
             return
