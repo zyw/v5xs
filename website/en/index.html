@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eaf3ec">
+  <meta name="description" content="v5xs is a macOS menu bar monitor with a little animal that runs to your CPU's rhythm. See your Mac's status at a glance, and manage apps and startup items.">
+  <title>v5xs — See your Mac in motion</title>
+  <link rel="icon" type="image/png" href="../assets/app-icon.png">
+  <link rel="stylesheet" href="../style.css">
+  <script defer src="../script.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <nav class="site-nav" aria-label="Main navigation">
+    <a class="brand" href="#top" aria-label="v5xs home">
+      <img src="../assets/app-icon.png" alt="" width="34" height="34">
+      <span>v5xs</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#details">Details</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-actions">
+      <div class="language-switch" aria-label="Language">
+        <a href="../" lang="zh-CN" hreflang="zh-CN" aria-label="中文版">中</a>
+        <span aria-current="page">EN</span>
+      </div>
+      <a class="button button-small" href="https://github.com/zyw/v5xs/releases/latest">Download for Mac <span aria-hidden="true">↗</span></a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="hero-heading reveal">
+      <img class="hero-icon" src="../assets/app-icon.png" alt="v5xs app icon" width="100" height="100">
+      <p class="hero-kicker">v5xs <span>for macOS</span></p>
+      <h1>See your Mac<br><span class="hero-accent">in motion<svg viewBox="0 0 330 26" preserveAspectRatio="none" aria-hidden="true"><path d="M4 20 C75 0 123 23 184 11 S280 5 326 10"/></svg></span></h1>
+      <p class="hero-lead">A little animal in your menu bar runs to your system's rhythm.<br> Know what's happening, without breaking your flow.</p>
+      <div class="hero-actions">
+        <a class="button" href="https://github.com/zyw/v5xs/releases/latest">Download v5xs <span aria-hidden="true">↘</span></a>
+        <a class="text-link" href="#features">Explore the features <span aria-hidden="true">↘</span></a>
+      </div>
+      <p class="hero-meta">macOS 14 or later <span>·</span> Apple Silicon / Intel <span>·</span> Current version v0.1.4</p>
+    </div>
+
+    <div class="hero-stage reveal">
+      <div class="stage-orbit orbit-one" aria-hidden="true"></div>
+      <div class="stage-orbit orbit-two" aria-hidden="true"></div>
+      <div class="stage-note note-left" aria-hidden="true">
+        <span class="note-label">A menu bar companion</span>
+        <img class="animal-frame" src="../assets/cat-frame-0.png" alt="" width="126" height="77" data-frame-sequence="cat">
+        <span class="note-small">The busier your Mac, the faster it runs.</span>
+      </div>
+      <figure class="stage-screen">
+        <img src="../assets/monitor.png" alt="v5xs monitor panel showing CPU, GPU, memory, disk, network, battery and processes" width="850" height="1466" fetchpriority="high">
+        <figcaption>Real app screenshot</figcaption>
+      </figure>
+      <div class="stage-note note-right" aria-hidden="true">
+        <span class="pulse-line"></span>
+        <span class="note-label">From the menu bar to the full picture</span>
+        <span class="note-small">See what your Mac is up to.</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="intro-section" id="features">
+      <div class="container section-heading reveal">
+        <p class="eyebrow">MORE THAN A NUMBER</p>
+        <h2>A quick glance,<br>or <span class="accent-text">the whole picture.</span></h2>
+        <p>It stays quietly in your menu bar. Open it when you want a closer look.</p>
+      </div>
+      <div class="container feature-layout">
+        <div class="feature-copy">
+          <article class="feature-item is-active" data-feature="0">
+            <span class="feature-index">01 / MONITOR</span>
+            <h3>Know what your Mac<br>is working on.</h3>
+            <p>CPU and GPU activity, memory, disk, network and temperature each have a place in one panel. Graphs show how things change, not just where they stand.</p>
+            <div class="feature-mobile"><img src="../assets/monitor.png" alt="v5xs live monitor panel" loading="lazy" width="850" height="1466"></div>
+          </article>
+          <article class="feature-item" data-feature="1">
+            <span class="feature-index">02 / UNINSTALL</span>
+            <h3>Clear out old apps<br>with confidence.</h3>
+            <p>Search, sort and select multiple apps. Review related files one by one before moving anything to the Trash.</p>
+            <div class="feature-mobile"><img src="../assets/uninstall.png" alt="v5xs app uninstaller" loading="lazy" width="1400" height="1160"></div>
+          </article>
+          <article class="feature-item" data-feature="2">
+            <span class="feature-index">03 / STARTUP</span>
+            <h3>See what starts<br>with your Mac.</h3>
+            <p>Login items, LaunchAgents and LaunchDaemons are grouped by source. Find what you no longer need and change its state where permissions allow.</p>
+            <div class="feature-mobile"><img src="../assets/startup.png" alt="v5xs startup items manager" loading="lazy" width="1400" height="1160"></div>
+          </article>
+        </div>
+        <div class="feature-visual" aria-hidden="true">
+          <div class="feature-frame">
+            <div class="frame-top"><span class="traffic"><i></i><i></i><i></i></span><span>v5xs</span><span class="frame-dot"></span></div>
+            <div class="feature-slide slide-monitor is-active"><img src="../assets/monitor.png" alt="" loading="lazy" width="850" height="1466"></div>
+            <div class="feature-slide slide-wide"><img src="../assets/uninstall.png" alt="" loading="lazy" width="1400" height="1160"></div>
+            <div class="feature-slide slide-wide"><img src="../assets/startup.png" alt="" loading="lazy" width="1400" height="1160"></div>
+          </div>
+          <div class="feature-caption"><span class="caption-index">01 / 03</span><span>Actual v5xs interface</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="details-section" id="details">
+      <div class="container section-heading reveal">
+        <p class="eyebrow">THOUGHTFUL DETAILS</p>
+        <h2>Small in the menu bar.<br><span class="accent-text">Big on the little things.</span></h2>
+      </div>
+      <div class="container detail-grid">
+        <article class="detail-card animal-card reveal">
+          <div class="card-copy"><span class="card-tag">MENU BAR ANIMALS</span><h3>Activity, with character.</h3><p>The busier your CPU, the faster your animal runs. Choose from 14 characters, or pause the animation whenever you like.</p></div>
+          <div class="animal-display" aria-hidden="true"><span class="animal-glow"></span><img class="animal-frame" src="../assets/cat-frame-0.png" alt="" width="126" height="77" data-frame-sequence="cat"><span class="animal-track"></span></div>
+        </article>
+        <article class="detail-card battery-card reveal">
+          <div class="card-copy"><span class="card-tag">BATTERY AT A GLANCE</span><h3>No more battery hunt.</h3><p>See your Mac's battery alongside connected Bluetooth mice and keyboards, all in the same panel.</p></div>
+          <div class="battery-art" aria-hidden="true"><span class="battery-ring ring-one">73<small>%</small></span><span class="battery-ring ring-two">100<small>%</small></span></div>
+        </article>
+        <article class="detail-card language-card reveal">
+          <div class="card-copy"><span class="card-tag">LANGUAGE & PACE</span><h3>Make it feel familiar.</h3><p>Switch between Simplified Chinese, Traditional Chinese and English instantly. Set the monitoring refresh rate to suit your needs.</p></div>
+          <div class="language-art" aria-hidden="true"><span>中</span><span>繁</span><span>EN</span><i></i></div>
+        </article>
+        <article class="detail-card process-card reveal">
+          <div class="card-copy"><span class="card-tag">BUSY PROCESSES</span><h3>See what's using your Mac.</h3><p>Sort by memory or CPU to find the busiest processes. You'll be asked to confirm before ending one.</p></div>
+          <div class="process-art" aria-hidden="true">
+            <div class="process-art-head"><span>Top processes</span><span>Memory <b>CPU</b></span></div>
+            <div class="process-art-row"><span class="process-dot"></span><span class="process-line long"></span><span class="process-meter"><i></i></span></div>
+            <div class="process-art-row"><span class="process-dot"></span><span class="process-line"></span><span class="process-meter medium"><i></i></span></div>
+            <div class="process-art-row"><span class="process-dot"></span><span class="process-line short"></span><span class="process-meter low"><i></i></span></div>
+          </div>
+        </article>
+        <article class="detail-card update-card reveal">
+          <div class="card-copy"><span class="card-tag">UPDATES</span><h3>Update on your terms.</h3><p>Check only, or download automatically. Packages are verified before installation, and you choose whether the app restarts on its own.</p></div>
+          <div class="update-gallery">
+            <a href="../assets/update-settings.png" target="_blank" rel="noopener" aria-label="View full update settings screenshot">
+              <img src="../assets/update-settings.png" alt="v5xs update settings with version, release notes and automatic update switches" loading="lazy" width="1240" height="944">
+              <span>Update settings · View full size <span aria-hidden="true">↗</span></span>
+            </a>
+            <a href="../assets/update-notes.png" target="_blank" rel="noopener" aria-label="View full release notes screenshot">
+              <img src="../assets/update-notes.png" alt="v5xs release notes showing formatted version details and changes" loading="lazy" width="1240" height="944">
+              <span>Release notes · View full size <span aria-hidden="true">↗</span></span>
+            </a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="download-section" id="download">
+      <div class="container download-panel reveal">
+        <div class="download-icon"><img src="../assets/app-icon.png" alt="" width="84" height="84"></div>
+        <p class="eyebrow">GET TO KNOW YOUR MAC</p>
+        <h2>A little more clarity,<br>every day.</h2>
+        <p>Download the DMG, drag v5xs into Applications, and start from the menu bar.</p>
+        <a class="button" href="https://github.com/zyw/v5xs/releases/latest">Download on GitHub <span aria-hidden="true">↗</span></a>
+        <span class="download-meta">v0.1.4 · macOS 14+</span>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq">
+      <div class="container faq-layout">
+        <div class="faq-intro reveal"><p class="eyebrow">FAQ</p><h2>Before you<br>get started.</h2><p>Installation, compatibility and permissions.</p></div>
+        <div class="faq-list">
+          <details><summary>Which macOS versions are supported?</summary><p>v5xs supports macOS 14 and later. Apple Silicon and Intel builds are available; pick the DMG for your Mac on the GitHub Releases page.</p></details>
+          <details><summary>What if macOS blocks the first launch?</summary><p>The current build uses an ad-hoc signature. If Gatekeeper shows a warning on first install, allow v5xs under System Settings → Privacy & Security.</p></details>
+          <details><summary>Will it restart automatically to update?</summary><p>That's up to you. Automatic checking, downloading and restart-to-install each have their own switch. With automatic restart off, click “Update and Restart” when the update is ready.</p></details>
+          <details><summary>Is temperature available on every Mac?</summary><p>Temperature readings have been verified on Mac14,2. On other models, unavailable readings are shown as such; the other monitoring features continue to work.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-main">
+      <div class="footer-brand"><img src="../assets/app-icon.png" alt="" width="40" height="40"><strong>v5xs</strong><p>Your Mac, at a glance.</p></div>
+      <div class="footer-links"><a href="#features">Features</a><a href="#details">Details</a><a href="https://github.com/zyw/v5xs/releases/latest">Download</a><a href="https://github.com/zyw/v5xs">GitHub</a></div>
+    </div>
+    <div class="container footer-bottom"><span>© 2026 v5xs</span><span>Made for macOS · <a href="../" lang="zh-CN" hreflang="zh-CN">中文版</a></span></div>
+  </footer>
+</body>
+</html>

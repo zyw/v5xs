@@ -7,7 +7,7 @@ Keep a lively little animal in your macOS menu bar — it runs faster the busier
 v5xs is a macOS menu-bar system monitor written in **SwiftUI + AppKit**. It shows a single animal silhouette in the menu bar: the busier the system, the faster it runs, staying smooth even at low load. Left-click opens the floating monitor panel; right-click swaps the character or opens Settings.
 
 <p align="center">
-  <img src="docs/screenshot-monitor.png" width="360" alt="v5xs monitor panel" />
+  <img src="images/monitor.png" width="360" alt="v5xs monitor panel" />
 </p>
 
 ## ✨ Features
@@ -27,7 +27,7 @@ v5xs is a macOS menu-bar system monitor written in **SwiftUI + AppKit**. It show
 
 | 🖥️ Monitor | 🗑️ Uninstaller | ⚙️ Startup Items |
 | --- | --- | --- |
-| <img src="docs/screenshot-monitor.png" width="300" alt="Monitor panel" /> | <img src="design-demos/images/uninstall.png" width="300" alt="Uninstaller" /> | <img src="design-demos/images/start-item.png" width="300" alt="Startup items" /> |
+| <img src="images/monitor.png" width="300" alt="Monitor panel" /> | <img src="images/uninstall.png" width="300" alt="Uninstaller" /> | <img src="images/start-item.png" width="300" alt="Startup items" /> |
 | Real-time system overview | Batch-select and review related files before moving to Trash | Grouped management of startup items |
 
 > More static screens and a clickable prototype for the uninstaller are in [docs/uninstall-design.md](docs/uninstall-design.md) and [docs/uninstall-prototype.html](docs/uninstall-prototype.html) (the prototype uses demo data and never moves files).
@@ -103,7 +103,7 @@ Three progressive toggles in the Updates page: auto-check (on), auto-download (o
 Publishing uses `scripts/make-update-manifest.sh`, which signs the manifest by default and pairs with [.github/workflows/publish-update-feed.yml](.github/workflows/publish-update-feed.yml) to upload `update.json` as a release asset. A signing secret must be configured in the repository first — see [docs/update-signing.md](docs/update-signing.md); release flow in [docs/update-publish.md](docs/update-publish.md); design comparison in [docs/update-research.md](docs/update-research.md).
 
 <p align="center">
-  <img src="docs/update-section.png" width="420" alt="Updates section in Settings" />
+  <img src="images/update-section.png" width="420" alt="Updates section in Settings" />
 </p>
 
 **Security model**: the build is ad-hoc signed, so code-signature verification can't establish identity. The trust root for updates is the **Ed25519 public key compiled into the app** — a manifest is only accepted if it carries a signature made with the matching private key. This matters because the SHA-256 inside a manifest comes from the same HTTPS response as the manifest itself: if the feed is hijacked, both can be swapped together and checksums prove nothing.

@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#eaf3ec">
+  <meta name="description" content="v5xs 是一款 macOS 菜单栏系统监控工具。让一只小动物跟着 CPU 的节奏跑，随时查看系统状态，并管理应用与启动项。">
+  <title>v5xs — 看见 Mac 的每一次呼吸</title>
+  <link rel="icon" type="image/png" href="assets/app-icon.png">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="script.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要内容</a>
+  <nav class="site-nav" aria-label="主导航">
+    <a class="brand" href="#top" aria-label="v5xs 首页">
+      <img src="assets/app-icon.png" alt="" width="34" height="34">
+      <span>v5xs</span>
+    </a>
+    <div class="nav-links">
+      <a href="#features">功能</a>
+      <a href="#details">更多细节</a>
+      <a href="#faq">常见问题</a>
+    </div>
+    <div class="nav-actions">
+      <div class="language-switch" aria-label="语言">
+        <span aria-current="page">中</span>
+        <a href="en/" lang="en" hreflang="en" aria-label="English version">EN</a>
+      </div>
+      <a class="button button-small" href="https://github.com/zyw/v5xs/releases/latest">下载 Mac 版 <span aria-hidden="true">↗</span></a>
+    </div>
+  </nav>
+
+  <header class="hero" id="top">
+    <div class="hero-heading reveal">
+      <img class="hero-icon" src="assets/app-icon.png" alt="v5xs 图标" width="100" height="100">
+      <p class="hero-kicker">v5xs <span>for macOS</span></p>
+      <h1>看见 Mac 的<br><span class="hero-accent">每一次呼吸<svg viewBox="0 0 330 26" preserveAspectRatio="none" aria-hidden="true"><path d="M4 20 C75 0 123 23 184 11 S280 5 326 10"/></svg></span></h1>
+      <p class="hero-lead">让菜单栏里的一只小动物，跟着系统的节奏跑。<br>状态一眼明白，工作不被打断。</p>
+      <div class="hero-actions">
+        <a class="button" href="https://github.com/zyw/v5xs/releases/latest">下载 v5xs <span aria-hidden="true">↘</span></a>
+        <a class="text-link" href="#features">看看它能做什么 <span aria-hidden="true">↘</span></a>
+      </div>
+      <p class="hero-meta">macOS 14 或更高版本 <span>·</span> Apple Silicon / Intel <span>·</span> 当前版本 v0.1.4</p>
+    </div>
+
+    <div class="hero-stage reveal">
+      <div class="stage-orbit orbit-one" aria-hidden="true"></div>
+      <div class="stage-orbit orbit-two" aria-hidden="true"></div>
+      <div class="stage-note note-left" aria-hidden="true">
+        <span class="note-label">菜单栏里的小伙伴</span>
+        <img class="animal-frame" src="assets/cat-frame-0.png" alt="" width="126" height="77" data-frame-sequence="cat">
+        <span class="note-small">忙起来，就跑起来。</span>
+      </div>
+      <figure class="stage-screen">
+        <img src="assets/monitor.png" alt="v5xs 监控面板，展示 CPU、GPU、内存、磁盘、网络、电量和进程状态" width="850" height="1466" fetchpriority="high">
+        <figcaption>真实应用界面</figcaption>
+      </figure>
+      <div class="stage-note note-right" aria-hidden="true">
+        <span class="pulse-line"></span>
+        <span class="note-label">从菜单栏，到全局状态</span>
+        <span class="note-small">抬眼就知道 Mac 在忙什么。</span>
+      </div>
+    </div>
+  </header>
+
+  <main id="main">
+    <section class="intro-section" id="features">
+      <div class="container section-heading reveal">
+        <p class="eyebrow">不止是一个数字</p>
+        <h2>从轻轻一瞥，<br>到<span class="accent-text">看得清清楚楚。</span></h2>
+        <p>它安静待在菜单栏。想深入一点，点开就是一整张 Mac 的状态地图。</p>
+      </div>
+      <div class="container feature-layout">
+        <div class="feature-copy">
+          <article class="feature-item is-active" data-feature="0">
+            <span class="feature-index">01 / MONITOR</span>
+            <h3>一眼，知道系统<br>在忙什么。</h3>
+            <p>CPU 和 GPU 活跃度、内存、磁盘、网络与温度，在一个面板里各就各位。曲线把变化留下来，你看到的不只是此刻。</p>
+            <div class="feature-mobile"><img src="assets/monitor.png" alt="v5xs 实时监控面板" loading="lazy" width="850" height="1466"></div>
+          </article>
+          <article class="feature-item" data-feature="1">
+            <span class="feature-index">02 / UNINSTALL</span>
+            <h3>不常用的应用，<br>清理得更踏实。</h3>
+            <p>搜索、排序、批量选择。移入废纸篓前，先逐项查看相关文件；要删什么，由你自己决定。</p>
+            <div class="feature-mobile"><img src="assets/uninstall.png" alt="v5xs 软件卸载窗口" loading="lazy" width="1400" height="1160"></div>
+          </article>
+          <article class="feature-item" data-feature="2">
+            <span class="feature-index">03 / STARTUP</span>
+            <h3>开机时谁在跑，<br>也能看得明白。</h3>
+            <p>登录项、LaunchAgent 和 LaunchDaemon 按来源分组。找到不需要的启动项，按权限情况启用或停用。</p>
+            <div class="feature-mobile"><img src="assets/startup.png" alt="v5xs 启动项管理窗口" loading="lazy" width="1400" height="1160"></div>
+          </article>
+        </div>
+        <div class="feature-visual" aria-hidden="true">
+          <div class="feature-frame">
+            <div class="frame-top"><span class="traffic"><i></i><i></i><i></i></span><span>v5xs</span><span class="frame-dot"></span></div>
+            <div class="feature-slide slide-monitor is-active"><img src="assets/monitor.png" alt="" loading="lazy" width="850" height="1466"></div>
+            <div class="feature-slide slide-wide"><img src="assets/uninstall.png" alt="" loading="lazy" width="1400" height="1160"></div>
+            <div class="feature-slide slide-wide"><img src="assets/startup.png" alt="" loading="lazy" width="1400" height="1160"></div>
+          </div>
+          <div class="feature-caption"><span class="caption-index">01 / 03</span><span>真实的 v5xs 界面</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="details-section" id="details">
+      <div class="container section-heading reveal">
+        <p class="eyebrow">细节，刚刚好</p>
+        <h2>小小菜单栏，<br><span class="accent-text">装得下很多关心。</span></h2>
+      </div>
+      <div class="container detail-grid">
+        <article class="detail-card animal-card reveal">
+          <div class="card-copy"><span class="card-tag">菜单栏动物</span><h3>忙碌有了模样。</h3><p>CPU 越忙，小动物跑得越快。14 种形象可选，也能随时暂停动画。</p></div>
+          <div class="animal-display" aria-hidden="true"><span class="animal-glow"></span><img class="animal-frame" src="assets/cat-frame-0.png" alt="" width="126" height="77" data-frame-sequence="cat"><span class="animal-track"></span></div>
+        </article>
+        <article class="detail-card battery-card reveal">
+          <div class="card-copy"><span class="card-tag">外设电量</span><h3>电量，不用四处找。</h3><p>Mac 本机与已连接的蓝牙鼠标、键盘电量，都在同一个面板里。</p></div>
+          <div class="battery-art" aria-hidden="true"><span class="battery-ring ring-one">73<small>%</small></span><span class="battery-ring ring-two">100<small>%</small></span></div>
+        </article>
+        <article class="detail-card language-card reveal">
+          <div class="card-copy"><span class="card-tag">语言与节奏</span><h3>用熟悉的方式相处。</h3><p>简体中文、繁體中文和 English 即时切换。监测刷新频率也能按需调整。</p></div>
+          <div class="language-art" aria-hidden="true"><span>中</span><span>繁</span><span>EN</span><i></i></div>
+        </article>
+        <article class="detail-card process-card reveal">
+          <div class="card-copy"><span class="card-tag">高占用进程</span><h3>谁在占资源，一目了然。</h3><p>按内存或 CPU 排序，快速找到占用大户。结束进程前还会再次确认。</p></div>
+          <div class="process-art" aria-hidden="true">
+            <div class="process-art-head"><span>高占用进程</span><span>内存 <b>CPU</b></span></div>
+            <div class="process-art-row"><span class="process-dot"></span><span class="process-line long"></span><span class="process-meter"><i></i></span></div>
+            <div class="process-art-row"><span class="process-dot"></span><span class="process-line"></span><span class="process-meter medium"><i></i></span></div>
+            <div class="process-art-row"><span class="process-dot"></span><span class="process-line short"></span><span class="process-meter low"><i></i></span></div>
+          </div>
+        </article>
+        <article class="detail-card update-card reveal">
+          <div class="card-copy"><span class="card-tag">自动更新</span><h3>更新的节奏，你来定。</h3><p>可以只检查，也可以自动下载。安装前校验更新包；是否重启更新，由开关决定。</p></div>
+          <div class="update-gallery">
+            <a href="assets/update-settings.png" target="_blank" rel="noopener" aria-label="查看完整更新设置截图">
+              <img src="assets/update-settings.png" alt="v5xs 更新设置：检查更新、更新说明及自动更新开关" loading="lazy" width="1240" height="944">
+              <span>更新设置 · 查看原图 <span aria-hidden="true">↗</span></span>
+            </a>
+            <a href="assets/update-notes.png" target="_blank" rel="noopener" aria-label="查看完整更新说明截图">
+              <img src="assets/update-notes.png" alt="v5xs 更新说明：排版后的版本信息和更新内容" loading="lazy" width="1240" height="944">
+              <span>更新说明 · 查看原图 <span aria-hidden="true">↗</span></span>
+            </a>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="download-section" id="download">
+      <div class="container download-panel reveal">
+        <div class="download-icon"><img src="assets/app-icon.png" alt="" width="84" height="84"></div>
+        <p class="eyebrow">把状态放回你手里</p>
+        <h2>让 Mac 的每一天，<br>都更有数。</h2>
+        <p>下载 DMG，拖入“应用程序”，从菜单栏开始了解你的 Mac。</p>
+        <a class="button" href="https://github.com/zyw/v5xs/releases/latest">前往 GitHub 下载 <span aria-hidden="true">↗</span></a>
+        <span class="download-meta">v0.1.4 · macOS 14+</span>
+      </div>
+    </section>
+
+    <section class="faq-section" id="faq">
+      <div class="container faq-layout">
+        <div class="faq-intro reveal"><p class="eyebrow">常见问题</p><h2>开始之前，<br>再说几句。</h2><p>安装、兼容性和权限，都在这里。</p></div>
+        <div class="faq-list">
+          <details><summary>v5xs 需要什么系统？</summary><p>支持 macOS 14 或更高版本，提供 Apple Silicon 与 Intel 架构的安装包。请在 GitHub Releases 页面选择适合设备的 DMG。</p></details>
+          <details><summary>第一次打开时被 macOS 拦住怎么办？</summary><p>当前安装包采用 ad-hoc 签名。首次安装如遇 Gatekeeper 提示，可到“系统设置 → 隐私与安全性”允许打开。</p></details>
+          <details><summary>会自动重启更新吗？</summary><p>由你决定。自动检查、自动下载与自动重启安装分别有开关；关闭自动重启后，可在更新准备完成时手动点“更新并重启”。</p></details>
+          <details><summary>所有温度读数都可用吗？</summary><p>温度读取目前针对已验证的 Mac14,2 机型；其他机型若无法确认数据来源，会显示不可用，其他监控功能不受影响。</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-main">
+      <div class="footer-brand"><img src="assets/app-icon.png" alt="" width="40" height="40"><strong>v5xs</strong><p>Mac 的状态，一眼就懂。</p></div>
+      <div class="footer-links"><a href="#features">功能</a><a href="#details">细节</a><a href="https://github.com/zyw/v5xs/releases/latest">下载</a><a href="https://github.com/zyw/v5xs">GitHub</a></div>
+    </div>
+    <div class="container footer-bottom"><span>© 2026 v5xs</span><span>为 macOS 而做 · <a href="en/" lang="en" hreflang="en">English</a></span></div>
+  </footer>
+</body>
+</html>
