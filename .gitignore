@@ -4,5 +4,8 @@
 dist/
 .DS_Store
 
+# 官网打包产物（由 scripts/build-website.sh 生成）
+website/dist/
+
 # 更新签名私钥，禁止入库
 scripts/update-keys/

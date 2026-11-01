@@ -68,6 +68,14 @@ bash scripts/build-dmg.sh
 
 > DMG 脚本使用 `uv` 获取 `dmgbuild`。如需指定 SDK，设置 `MACOS_SDK=/path/to/MacOSX.sdk`。
 
+打包静态官网：
+
+```bash
+bash scripts/build-website.sh
+```
+
+产物为可直接部署的 `website/dist/`（含中英文两页与资源）与压缩包 `dist/v5xs-website-<version>.zip`；脚本会自检页面引用的资源是否都存在。
+
 ## 🖱️ 使用
 
 - **左键点击菜单栏动物**：打开 / 关闭监控面板。

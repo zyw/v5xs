@@ -68,6 +68,14 @@ bash scripts/build-dmg.sh
 
 > The DMG script uses `uv` to fetch `dmgbuild`. To use a specific SDK, set `MACOS_SDK=/path/to/MacOSX.sdk`.
 
+Package the static website:
+
+```bash
+bash scripts/build-website.sh
+```
+
+This produces a deployable `website/dist/` (both language pages plus assets) and `dist/v5xs-website-<version>.zip`. The script verifies that every referenced asset exists.
+
 ## 🖱️ Usage
 
 - **Left-click the menu bar animal**: open / close the monitor panel.
