@@ -584,6 +584,18 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .about: return "info.circle"
         }
     }
+
+    /// 导航项在图标的主题色。与整体深色风格保持一致：未选中时以主题色勾勒，
+    /// 选中时落在蓝色高亮上转白。浅色/深色下都可读。
+    var tint: Color {
+        switch self {
+        case .general: return Color(red: 0.52, green: 0.75, blue: 0.92)   // 蓝
+        case .monitoring: return Color(red: 0.57, green: 0.86, blue: 0.72) // mint
+        case .update: return Color(red: 0.96, green: 0.78, blue: 0.52)     // amber
+        case .language: return Color(red: 0.62, green: 0.79, blue: 0.67)   // 青
+        case .about: return Color(red: 0.64, green: 0.71, blue: 0.67)      // muted
+        }
+    }
 }
 
 struct SettingsPanel: View {
@@ -619,8 +631,8 @@ struct SettingsPanel: View {
             Spacer(minLength: 0)
         }
         .padding(10)
-        .frame(width: 168)
-        .background(Palette.background.opacity(0.35))
+        .frame(width: 178)
+        .background(Color(nsColor: .controlBackgroundColor))
     }
 
     /// 右侧内容随选中分区切换；每个分区各自是一个 grouped Form。
@@ -714,9 +726,9 @@ struct SettingsPanel: View {
             LabeledContent(localization.t(.aboutUptime), value: uptimeText)
 
             Section(localization.t(.aboutLinks)) {
+                linkRow(localization.t(.aboutWebsite), "https://v5xs.v5ai.xin")
                 linkRow(localization.t(.aboutAppRepo), "https://github.com/zyw/v5xs")
                 linkRow(localization.t(.aboutHomepage), "https://v5ai.xin")
-                linkRow(localization.t(.aboutAuthorGithub), "https://github.com/zyw")
             }
 
             Text(localization.t(.gpuTemperatureHint))
@@ -762,22 +774,30 @@ private struct SidebarRow: View {
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 7) {
-                Image(systemName: section.symbol)
-                    .font(.system(size: 11))
-                    .frame(width: 16)
-                Text(title).font(.system(size: 12, weight: isSelected ? .semibold : .regular))
+            HStack(spacing: 10) {
+                // 图标的主题色底 + 白色图形（类似 macOS 系统设置里各类图标配色），
+                // 选中时整行转蓝、图标落回主题色描边，未选中时图标保持彩色便于区分分区。
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(isSelected ? Color.white.opacity(0.22) : section.tint.opacity(0.18))
+                    Image(systemName: section.symbol)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(isSelected ? Color.white : section.tint)
+                }
+                .frame(width: 26, height: 26)
+                Text(title)
+                    .font(.system(size: 13, weight: isSelected ? .semibold : .regular))
                 Spacer(minLength: 0)
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .foregroundStyle(isSelected ? Color.white : Color.primary.opacity(0.85))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .foregroundStyle(isSelected ? Color.white : Color.primary)
             .background(
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(isSelected ? Color.accentColor
-                          : (hovering ? Color.primary.opacity(0.07) : Color.clear))
+                          : (hovering ? Color.primary.opacity(0.06) : Color.clear))
             )
-            .contentShape(RoundedRectangle(cornerRadius: 6))
+            .contentShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
         .buttonStyle(.plain)
         .onHover { hovering = $0 }

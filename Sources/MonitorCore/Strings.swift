@@ -42,7 +42,7 @@ public enum StringKey: String, CaseIterable, Sendable {
     case settingsGeneral, settingsMonitoring, settingsUpdate, settingsLanguage, settingsAbout
     case language, languageHint, languageRestartHint
     case aboutVersion, aboutSystem, aboutCpu, aboutUptime
-    case aboutLinks, aboutAppRepo, aboutHomepage, aboutAuthorGithub
+    case aboutLinks, aboutWebsite, aboutAppRepo, aboutHomepage, aboutAuthorGithub
     case uptimeDaysHours, uptimeDuration, uptimeLabel, previewTitle
     case updateDownloadAndInstall, updateDownloading, updateVerifying, updatePreparing, updateRestarting, updateCancel, updateFailureCancelled, updateFailureDownload, updateFailureChecksum, updateFailureManualInstall, updateFailureNoSpace, updateFailureMultipleInstances, updateFailureInstall, updateInstallHint, updateSettingsAutoCheck, updateSettingsAutoDownload, updateSettingsAutoInstall, updateSettingsAutoInstallHint, updateInstallNow, updateReadyBanner, updateManualFallback
     case updateSignatureMissing, updateSignatureMalformed, updateSignatureInvalid, updateSigningKeyInvalid, updateChecksumMissing
@@ -383,7 +383,8 @@ public enum Strings {
         .updateNotesUnavailable: "暂无更新说明",
         .updateNotesOpen: "打开",
         .aboutLinks: "链接",
-        .aboutAppRepo: "项目主页",
+        .aboutWebsite: "官网",
+        .aboutAppRepo: "Github",
         .aboutHomepage: "个人主页",
         .aboutAuthorGithub: "作者 GitHub",
     ]
@@ -692,7 +693,8 @@ public enum Strings {
         .updateNotesUnavailable: "暫無更新說明",
         .updateNotesOpen: "開啟",
         .aboutLinks: "連結",
-        .aboutAppRepo: "專案首頁",
+        .aboutWebsite: "官網",
+        .aboutAppRepo: "Github",
         .aboutHomepage: "個人首頁",
         .aboutAuthorGithub: "作者 GitHub",
     ]
@@ -1001,7 +1003,8 @@ public enum Strings {
         .updateNotesUnavailable: "No release notes available",
         .updateNotesOpen: "Open",
         .aboutLinks: "Links",
-        .aboutAppRepo: "Project on GitHub",
+        .aboutWebsite: "Website",
+        .aboutAppRepo: "Github",
         .aboutHomepage: "Homepage",
         .aboutAuthorGithub: "Author on GitHub",
     ]
