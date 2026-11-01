@@ -3,8 +3,7 @@ set -euo pipefail
 
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$project_dir"
-sdk="${MACOS_SDK:-/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk}"
-if [[ ! -d "$sdk" ]]; then sdk="$(xcrun --sdk macosx --show-sdk-path)"; fi
+sdk="$(bash scripts/sdk-path.sh)"
 build_dir="$project_dir/.build-local"
 mkdir -p "$build_dir/modules"
 swiftc -swift-version 6 -sdk "$sdk" -module-cache-path "$build_dir/modules" \

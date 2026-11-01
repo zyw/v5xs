@@ -6,15 +6,7 @@ set -euo pipefail
 project_dir="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$project_dir"
 
-sdk="${MACOS_SDK:-}"
-if [[ -z "$sdk" ]]; then
-  if [[ -d /Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk ]] &&
-     [[ "$(xcode-select -p)" == "/Library/Developer/CommandLineTools" ]]; then
-    sdk="/Library/Developer/CommandLineTools/SDKs/MacOSX15.4.sdk"
-  else
-    sdk="$(xcrun --sdk macosx --show-sdk-path)"
-  fi
-fi
+sdk="$(bash scripts/sdk-path.sh)"
 
 build_dir="$project_dir/.build-local"
 mkdir -p "$build_dir/modules"
